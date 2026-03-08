@@ -335,7 +335,7 @@ function SavedProfilePicker({ activeId, onSelect, onClear }) {
               position: "absolute",
               top: "calc(100% + 8px)",
               left: 0,
-              minWidth: 320,
+              minWidth: "min(320px, 90vw)",
               zIndex: 200,
               borderRadius: "1rem",
               background: "#14113A",

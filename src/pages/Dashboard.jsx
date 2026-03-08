@@ -109,7 +109,7 @@ export default function Dashboard() {
     <div className="space-y-7 max-w-7xl mx-auto">
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 style={{ color: textOn, fontSize: typography["3xl"], fontWeight: typography.bold, letterSpacing: typography.tight, marginBottom: 6 }}>
             Dashboard Overview
@@ -118,7 +118,7 @@ export default function Dashboard() {
         </div>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => navigate("/dashboard/create")}
-          className="hidden sm:flex items-center gap-2 px-5 py-3 rounded-xl"
+          className="flex items-center gap-2 px-5 py-3 rounded-xl"
           style={{ background: colors.gradientAccent, color: "#fff", fontWeight: typography.semibold, fontSize: typography.sm }}>
           <PlusIcon className="w-4 h-4" strokeWidth={2.5} /> New Shipment
         </motion.button>

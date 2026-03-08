@@ -105,22 +105,24 @@ export default function FreightIntelligence() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1.5 rounded-xl w-fit" style={{ background: surfaceMid, border: `1px solid ${border}` }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{
-              background: tab === t.id ? surface : "transparent",
-              color: tab === t.id ? textOn : textSub,
-              border: tab === t.id ? `1px solid ${border}` : "1px solid transparent",
-            }}>
-            {t.label}
-            {t.count > 0 && (
-              <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: colors.error, color: "#fff" }}>{t.count}</span>
-            )}
-          </button>
-        ))}
+      <div className="overflow-x-auto pb-1">
+        <div className="flex gap-2 p-1.5 rounded-xl w-fit" style={{ background: surfaceMid, border: `1px solid ${border}` }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className="flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap"
+              style={{
+                background: tab === t.id ? surface : "transparent",
+                color: tab === t.id ? textOn : textSub,
+                border: tab === t.id ? `1px solid ${border}` : "1px solid transparent",
+              }}>
+              {t.label}
+              {t.count > 0 && (
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{ background: colors.error, color: "#fff" }}>{t.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Port Congestion ── */}

@@ -110,14 +110,16 @@ export default function Sustainability() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1.5 rounded-xl w-fit" style={{ background: surfaceMid, border: `1px solid ${border}` }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className="px-5 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{ background: tab === t.id ? surface : "transparent", color: tab === t.id ? textOn : textSub, border: tab === t.id ? `1px solid ${border}` : "1px solid transparent" }}>
-            {t.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto pb-1">
+        <div className="flex gap-2 p-1.5 rounded-xl w-fit" style={{ background: surfaceMid, border: `1px solid ${border}` }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className="px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap"
+              style={{ background: tab === t.id ? surface : "transparent", color: tab === t.id ? textOn : textSub, border: tab === t.id ? `1px solid ${border}` : "1px solid transparent" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Emissions by Shipment ── */}

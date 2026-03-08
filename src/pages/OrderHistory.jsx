@@ -146,18 +146,19 @@ export default function OrderHistory() {
           </h1>
           <p style={{ color: textSub, fontSize: typography.base }}>Track and manage all your shipment orders</p>
         </div>
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl transition-all"
             style={{ background: surfaceMid, border: `1px solid ${border}`, color: textSub, fontSize: typography.sm }}>
-            <ArrowDownTrayIcon className="w-4 h-4" /> Export CSV
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Export CSV</span>
           </button>
           <button
             onClick={() => setShowCancelled(v => !v)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl transition-all"
             style={{ background: showCancelled ? "rgba(167,139,250,0.12)" : surfaceMid, border: `1px solid ${showCancelled ? "rgba(167,139,250,0.3)" : border}`, color: showCancelled ? "#A78BFA" : textSub, fontSize: typography.sm }}>
             {showCancelled ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-            {showCancelled ? "Hide Cancelled" : "Show Cancelled"}
+            <span className="hidden sm:inline">{showCancelled ? "Hide Cancelled" : "Show Cancelled"}</span>
           </button>
         </div>
       </div>

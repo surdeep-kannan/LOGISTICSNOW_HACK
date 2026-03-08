@@ -96,6 +96,7 @@ function Ticker() {
 // ── Navbar ────────────────────────────────────────────────
 function Navbar({ onLogin, onSignup }) {
   const [scrolled, setScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20)
     window.addEventListener("scroll", fn)
@@ -103,40 +104,86 @@ function Navbar({ onLogin, onSignup }) {
   }, [])
 
   return (
-    <motion.nav initial={{ y: -52, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45 }}
-      style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, height: 58,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 32px",
-        background: scrolled ? "rgba(57,49,133,0.92)" : "transparent",
-        backdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled ? `1px solid ${C.border}` : "none",
-        transition: "all 0.3s",
-      }}>
+    <>
+      <motion.nav initial={{ y: -52, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45 }}
+        style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, height: 58,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 20px",
+          background: scrolled || mobileOpen ? "rgba(57,49,133,0.96)" : "transparent",
+          backdropFilter: scrolled || mobileOpen ? "blur(20px)" : "none",
+          borderBottom: scrolled || mobileOpen ? `1px solid ${C.border}` : "none",
+          transition: "all 0.3s",
+        }}>
 
-      {/* Logo — lorri.png only, no L box */}
-      <img src={lorriLogo} alt="LoRRI" style={{ height: 32, objectFit: "contain" }} />
+        <img src={lorriLogo} alt="LoRRI" style={{ height: 32, objectFit: "contain" }} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        {["Features", "How it Works", "Pricing"].map(l => (
-          <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
-            style={{ color: C.textMid, fontSize: 13, textDecoration: "none", padding: "5px 12px", borderRadius: 7, transition: "color 0.15s" }}
-            onMouseEnter={e => e.target.style.color = C.textHi}
-            onMouseLeave={e => e.target.style.color = C.textMid}>{l}</a>
-        ))}
-        <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
-        <button onClick={onLogin}
-          style={{ color: C.textMid, fontSize: 13, background: "transparent", border: `1px solid ${C.border}`, padding: "6px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderUp; e.currentTarget.style.color = C.textHi }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMid }}>
-          Sign In
-        </button>
-        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={onSignup}
-          style={{ color: "#fff", fontSize: 13, fontWeight: 700, background: C.grad, border: "none", padding: "7px 18px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 16px ${C.accentGlow}` }}>
-          Get Started
-        </motion.button>
-      </div>
-    </motion.nav>
+        {/* Desktop nav */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, "@media(max-width:640px)": { display: "none" } }} className="hidden sm:flex">
+          {["Features", "How it Works", "Pricing"].map(l => (
+            <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
+              style={{ color: C.textMid, fontSize: 13, textDecoration: "none", padding: "5px 12px", borderRadius: 7, transition: "color 0.15s" }}
+              onMouseEnter={e => e.target.style.color = C.textHi}
+              onMouseLeave={e => e.target.style.color = C.textMid}>{l}</a>
+          ))}
+          <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
+          <button onClick={onLogin}
+            style={{ color: C.textMid, fontSize: 13, background: "transparent", border: `1px solid ${C.border}`, padding: "6px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderUp; e.currentTarget.style.color = C.textHi }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMid }}>
+            Sign In
+          </button>
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={onSignup}
+            style={{ color: "#fff", fontSize: 13, fontWeight: 700, background: C.grad, border: "none", padding: "7px 18px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 16px ${C.accentGlow}` }}>
+            Get Started
+          </motion.button>
+        </div>
+
+        {/* Mobile: CTA + hamburger */}
+        <div className="flex sm:hidden items-center gap-2">
+          <button onClick={onSignup}
+            style={{ color: "#fff", fontSize: 12, fontWeight: 700, background: C.grad, border: "none", padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+            Get Started
+          </button>
+          <button onClick={() => setMobileOpen(o => !o)}
+            style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.08)", border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.textMid }}>
+            {mobileOpen
+              ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            }
+          </button>
+        </div>
+      </motion.nav>
+
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
+            className="sm:hidden"
+            style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 199, background: "rgba(57,49,133,0.98)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}`, padding: "16px 20px 24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
+              {["Features", "How it Works", "Pricing"].map(l => (
+                <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
+                  onClick={() => setMobileOpen(false)}
+                  style={{ color: C.textMid, fontSize: 15, textDecoration: "none", padding: "10px 12px", borderRadius: 8, display: "block" }}>
+                  {l}
+                </a>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { onLogin(); setMobileOpen(false) }}
+                style={{ flex: 1, color: C.textMid, fontSize: 14, background: "transparent", border: `1px solid ${C.border}`, padding: "10px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+                Sign In
+              </button>
+              <button onClick={() => { onSignup(); setMobileOpen(false) }}
+                style={{ flex: 1, color: "#fff", fontSize: 14, fontWeight: 700, background: C.grad, border: "none", padding: "10px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+                Sign Up
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 
@@ -239,10 +286,10 @@ export default function LandingPage() {
         <div style={{ position: "absolute", top: "10%", left: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,180,216,0.08) 0%, transparent 65%)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: 0, right: "-5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,119,182,0.1) 0%, transparent 65%)", pointerEvents: "none" }} />
 
-        <div style={{ position: "relative", zIndex: 2, width: "100%", maxWidth: 1160, margin: "0 auto", padding: "72px 32px 56px", display: "flex", alignItems: "center", gap: 56 }}>
+        <div style={{ position: "relative", zIndex: 2, width: "100%", maxWidth: 1160, margin: "0 auto", padding: "72px 20px 56px", display: "flex", alignItems: "center", gap: 56, flexWrap: "wrap" }}>
 
           {/* Left */}
-          <div style={{ flex: "0 0 auto", maxWidth: 520 }}>
+          <div style={{ flex: "1 1 300px", maxWidth: 520 }}>
 
             {/* lorri.png — visible in hero */}
             <motion.img
@@ -297,7 +344,8 @@ export default function LandingPage() {
 
           {/* Right — route widget */}
           <motion.div initial={{ opacity: 0, x: 32, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ duration: 0.6, delay: 0.3 }}
-            style={{ flex: 1, display: "flex", justifyContent: "center", animation: "lp-float 6s ease-in-out infinite" }}>
+            className="hidden md:flex"
+            style={{ flex: "1 1 320px", justifyContent: "center", animation: "lp-float 6s ease-in-out infinite" }}>
             <RouteWidget />
           </motion.div>
         </div>
@@ -305,12 +353,12 @@ export default function LandingPage() {
 
       {/* ── STATS ── */}
       <section style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, background: "rgba(0,0,0,0.15)" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }} className="sm:grid-cols-4">
           {STATS.map((s, i) => (
             <motion.div key={s.label}
               initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
-              style={{ padding: "40px 32px", borderRight: i < 3 ? `1px solid ${C.border}` : "none", textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em", color: C.textHi, marginBottom: 6 }}>{s.val}</div>
+              style={{ padding: "28px 16px", borderRight: (i % 2 !== 1) ? `1px solid ${C.border}` : "none", borderBottom: i < 2 ? `1px solid ${C.border}` : "none", textAlign: "center" }}>
+              <div style={{ fontSize: "clamp(24px, 3.5vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em", color: C.textHi, marginBottom: 6 }}>{s.val}</div>
               <div style={{ color: C.textLow, fontSize: 12, lineHeight: 1.4 }}>{s.label}</div>
             </motion.div>
           ))}
@@ -318,8 +366,8 @@ export default function LandingPage() {
       </section>
 
       {/* ── AI ASSISTANT — bot.json lives here ── */}
-      <section style={{ padding: "80px 32px", background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 64, flexWrap: "wrap" }}>
+      <section style={{ padding: "60px 20px", background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 48, flexWrap: "wrap", justifyContent: "center" }}>
 
           {/* Lottie bot */}
           <motion.div
@@ -355,7 +403,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" style={{ padding: "88px 32px" }}>
+      <section id="how-it-works" style={{ padding: "60px 20px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ marginBottom: 52, textAlign: "center" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 13px", borderRadius: 999, background: C.accentDim, border: `1px solid rgba(0,180,216,0.25)`, color: C.accent, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 18 }}>
@@ -366,7 +414,7 @@ export default function LandingPage() {
               <span style={{ background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>in 30 days</span>
             </h2>
           </motion.div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 2 }}>
             {PROCESS.map((p, i) => (
               <motion.div key={p.n}
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
@@ -382,7 +430,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section id="features" style={{ padding: "88px 32px", background: "rgba(0,0,0,0.12)" }}>
+      <section id="features" style={{ padding: "60px 20px", background: "rgba(0,0,0,0.12)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ marginBottom: 52, textAlign: "center" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 13px", borderRadius: 999, background: "rgba(255,255,255,0.06)", border: `1px solid ${C.border}`, color: C.textMid, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 18 }}>
@@ -416,7 +464,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section style={{ padding: "88px 32px" }}>
+      <section style={{ padding: "60px 20px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ marginBottom: 52, textAlign: "center" }}>
             <div style={{ display: "inline-flex", gap: 7, padding: "4px 13px", borderRadius: 999, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: C.success, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 18 }}>
@@ -449,7 +497,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ padding: "88px 32px", background: "rgba(0,0,0,0.12)", borderTop: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: "60px 20px", background: "rgba(0,0,0,0.12)", borderTop: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 700, height: 350, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(0,180,216,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
@@ -479,7 +527,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ padding: "28px 32px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
+      <footer style={{ padding: "24px 20px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <img src={lorriLogo} alt="LoRRI" style={{ height: 24, objectFit: "contain" }} />
           <span style={{ color: C.textLow, fontSize: 12 }}>© 2026 LogisticsNow. All rights reserved.</span>

@@ -3,11 +3,11 @@ import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
 // ── Asset imports — Vite resolves these to correct hashed URLs ──
-import imgSmoving    from "../assets/smoving.png"
-import imgTruckMove  from "../assets/truck_move.png"
-import imgLoading    from "../assets/loading.png"
-import imgLcomplete  from "../assets/lcomplete.png"
-import imgShipMoving from "../assets/ship_moving.png"
+const imgSmoving    = new URL("../assets/smoving.png", import.meta.url).href
+const imgTruckMove  = new URL("../assets/truck_move.png", import.meta.url).href
+const imgLoading    = new URL("../assets/loading.png", import.meta.url).href
+const imgLcomplete  = new URL("../assets/lcomplete.png", import.meta.url).href
+const imgShipMoving = new URL("../assets/ship_moving.png", import.meta.url).href
 /**
  * shipmentState values:
  *   "truck-departed"  → smoving.png       (truck just left a hub)
@@ -141,7 +141,7 @@ export function ShipmentMap({
           styleEl.textContent = `
             .lorri-gif-icon { background: transparent !important; border: none !important; }
             .lorri-gif-icon img {
-              mix-blend-mode: multiply;
+              
               background: transparent;
             }
             .leaflet-marker-icon.leaflet-zoom-animated { background: transparent !important; }
