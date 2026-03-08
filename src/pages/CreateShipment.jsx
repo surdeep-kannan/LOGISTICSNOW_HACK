@@ -241,11 +241,16 @@ function SavedProfilePicker({ activeId, onSelect, onClear }) {
 
   // Load past shipments from DB and convert to profiles
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      try {
-        const data = await shipmentsApi.list({ limit: 10, offset: 0 })
-        const shipmentList = data.shipments ?? []
+  let mounted = true
+
+  async function load() {
+    setLoading(true)
+    try {
+      const data = await shipmentsApi.list({ limit: 10, offset: 0 })
+
+      if (!mounted) return
+
+      const shipmentList = data.shipments ?? []
         if (shipmentList.length === 0) {
           // No real shipments yet — show hardcoded demo profiles
           setProfiles(FALLBACK_PROFILES)
@@ -269,8 +274,12 @@ function SavedProfilePicker({ activeId, onSelect, onClear }) {
         setLoading(false)
       }
     }
-    load()
-  }, [])
+      load()
+
+  return () => {
+    mounted = false
+  }
+}, [])
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -562,31 +571,43 @@ export default function CreateShipment() {
 
   // Pre-fill origin from logged-in user's profile/company
   useEffect(() => {
-    async function prefill() {
-      try {
-        let data = getCached("auth:me")
-        if (!data) data = await auth.me()
-        const u  = data?.user
-        const p  = u?.profile ?? u
-        const co = p?.companies ?? {}
-        setFormData(prev => ({
-          ...prev,
-          originContact: prev.originContact || p?.full_name     || "",
-          originPhone:   prev.originPhone   || p?.mobile_number || "",
-          originEmail:   prev.originEmail   || u?.email         || "",
-          originCompany: prev.originCompany || co?.name         || "",
-          originAddress: prev.originAddress || co?.address      || "",
-          originCity:    prev.originCity    || co?.city         || "",
-          originState:   prev.originState   || co?.state        || "",
-          originZip:     prev.originZip     || co?.zip          || "",
-          originCountry: prev.originCountry || co?.country      || "India",
-        }))
-      } catch (_) { /* silently fail */ } finally {
-        setProfileLoaded(true)
-      }
+  let mounted = true
+
+  async function prefill() {
+    try {
+      let data = getCached("auth:me")
+      if (!data) data = await auth.me()
+
+      if (!mounted) return
+
+      const u  = data?.user
+      const p  = u?.profile ?? u
+      const co = p?.companies ?? {}
+
+      setFormData(prev => ({
+        ...prev,
+        originContact: prev.originContact || p?.full_name || "",
+        originPhone: prev.originPhone || p?.mobile_number || "",
+        originEmail: prev.originEmail || u?.email || "",
+        originCompany: prev.originCompany || co?.name || "",
+        originAddress: prev.originAddress || co?.address || "",
+        originCity: prev.originCity || co?.city || "",
+        originState: prev.originState || co?.state || "",
+        originZip: prev.originZip || co?.zip || "",
+        originCountry: prev.originCountry || co?.country || "India",
+      }))
+    } catch (_) {}
+    finally {
+      if (mounted) setProfileLoaded(true)
     }
-    prefill()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }
+
+  prefill()
+
+  return () => {
+    mounted = false
+  }
+}, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key, val) => setFormData(prev => {
     const next = { ...prev, [key]: val }
