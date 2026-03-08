@@ -241,43 +241,46 @@ function SavedProfilePicker({ activeId, onSelect, onClear }) {
 
   // Load past shipments from DB and convert to profiles
   useEffect(() => {
-  let mounted = true
+  let cancelled = false
 
   async function load() {
     setLoading(true)
+
     try {
       const data = await shipmentsApi.list({ limit: 10, offset: 0 })
 
-      if (!mounted) return
+      if (cancelled) return
 
       const shipmentList = data.shipments ?? []
-        if (shipmentList.length === 0) {
-          // No real shipments yet — show hardcoded demo profiles
-          setProfiles(FALLBACK_PROFILES)
-        } else {
-          // Deduplicate by route so we don't show 10 identical entries
-          const seen = new Set()
-          const unique = []
-          for (const s of shipmentList) {
-            const key = `${s.origin_city}|${s.dest_city}`
-            if (!seen.has(key)) {
-              seen.add(key)
-              unique.push(shipmentToProfile(s))
-            }
-          }
-          setProfiles(unique)
-        }
-      } catch (_) {
-        // On any error also fall back to demo profiles
+
+      if (shipmentList.length === 0) {
         setProfiles(FALLBACK_PROFILES)
-      } finally {
-        setLoading(false)
+      } else {
+        const seen = new Set()
+        const unique = []
+
+        for (const s of shipmentList) {
+          const key = `${s.origin_city}|${s.dest_city}`
+
+          if (!seen.has(key)) {
+            seen.add(key)
+            unique.push(shipmentToProfile(s))
+          }
+        }
+
+        setProfiles(unique)
       }
+    } catch (_) {
+      if (!cancelled) setProfiles(FALLBACK_PROFILES)
+    } finally {
+      if (!cancelled) setLoading(false)
     }
-      load()
+  }
+
+  load()
 
   return () => {
-    mounted = false
+    cancelled = true
   }
 }, [])
 
@@ -571,14 +574,14 @@ export default function CreateShipment() {
 
   // Pre-fill origin from logged-in user's profile/company
   useEffect(() => {
-  let mounted = true
+  let cancelled = false
 
   async function prefill() {
     try {
       let data = getCached("auth:me")
       if (!data) data = await auth.me()
 
-      if (!mounted) return
+      if (cancelled) return
 
       const u  = data?.user
       const p  = u?.profile ?? u
@@ -596,18 +599,19 @@ export default function CreateShipment() {
         originZip: prev.originZip || co?.zip || "",
         originCountry: prev.originCountry || co?.country || "India",
       }))
-    } catch (_) {}
-    finally {
-      if (mounted) setProfileLoaded(true)
+    } catch (_) {
+      // ignore errors
+    } finally {
+      if (!cancelled) setProfileLoaded(true)
     }
   }
 
   prefill()
 
   return () => {
-    mounted = false
+    cancelled = true
   }
-}, []) // eslint-disable-line react-hooks/exhaustive-deps
+}, [])// eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key, val) => setFormData(prev => {
     const next = { ...prev, [key]: val }
