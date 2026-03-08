@@ -466,8 +466,8 @@ function PayPalModal({ route, formData, onClose, onSuccess }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
+        className="fixed inset-0 flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 99999 }}
         onClick={(e) => { if (e.target === e.currentTarget && !processing) onClose() }}
       >
         <motion.div
@@ -896,7 +896,7 @@ export function RouteSelection({ formData, onBack, onReady }) {
             )}
           </div>
 
-          <div className="flex-1 min-h-0" style={{ position: "relative" }}>
+          <div className="flex-1 min-h-0" style={{ position: "relative", zIndex: 1 }}>
             {selectedRouteData && originCoords && destCoords && (
               <RouteMap key={`${selectedRoute}-map`} origin={origin} destination={destination} route={selectedRouteData} />
             )}
