@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
+// ── Asset imports — Vite resolves these to correct hashed URLs ──
+import imgSmoving    from "../assets/smoving.png"
+import imgTruckMove  from "../assets/truck_move.png"
+import imgLoading    from "../assets/loading.png"
+import imgLcomplete  from "../assets/lcomplete.png"
+import imgShipMoving from "../assets/ship_moving.png"
 /**
  * shipmentState values:
  *   "truck-departed"  → smoving.png       (truck just left a hub)
@@ -15,13 +21,13 @@ import "leaflet/dist/leaflet.css"
  */
 
 const STATE_CONFIG = {
-  "truck-departed":  { img: "/src/assets/smoving.png",     size: 64, label: "DEPARTED", labelBg: "#F59E0B", pulse: "#F59E0B" },
-  "truck-moving":    { img: "/src/assets/truck_move.png",  size: 64, label: "LIVE",     labelBg: "#EF4444", pulse: "#F59E0B" },
-  "loading-ship":    { img: "/src/assets/loading.png",     size: 72, label: "LOADING",  labelBg: "#6C63FF", pulse: "#6C63FF" },
-  "loaded-complete": { img: "/src/assets/lcomplete.png",   size: 68, label: "LOADED",   labelBg: "#10B981", pulse: "#10B981" },
-  "ship-moving":     { img: "/src/assets/ship_moving.png", size: 80, label: "AT SEA",   labelBg: "#3B82F6", pulse: "#3B82F6" },
-  "customs":         { img: "/src/assets/loading.png",     size: 68, label: "CUSTOMS",   labelBg: "#6C63FF", pulse: "#6C63FF" },
-  "checkpoint":      { img: "/src/assets/smoving.png",     size: 64, label: "CHECKPOINT", labelBg: "#F59E0B", pulse: "#F59E0B" },
+  "truck-departed":  { img: imgSmoving,    size: 64, label: "DEPARTED",   labelBg: "#F59E0B", pulse: "#F59E0B" },
+  "truck-moving":    { img: imgTruckMove,  size: 64, label: "LIVE",       labelBg: "#EF4444", pulse: "#F59E0B" },
+  "loading-ship":    { img: imgLoading,    size: 72, label: "LOADING",    labelBg: "#6C63FF", pulse: "#6C63FF" },
+  "loaded-complete": { img: imgLcomplete,  size: 68, label: "LOADED",     labelBg: "#10B981", pulse: "#10B981" },
+  "ship-moving":     { img: imgShipMoving, size: 80, label: "AT SEA",     labelBg: "#3B82F6", pulse: "#3B82F6" },
+  "customs":         { img: imgLoading,    size: 68, label: "CUSTOMS",    labelBg: "#6C63FF", pulse: "#6C63FF" },
+  "checkpoint":      { img: imgSmoving,    size: 64, label: "CHECKPOINT", labelBg: "#F59E0B", pulse: "#F59E0B" },
 }
 
 function makeMovingIcon(state) {
