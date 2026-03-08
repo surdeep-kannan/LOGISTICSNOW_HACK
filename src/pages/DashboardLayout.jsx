@@ -6,7 +6,7 @@ import {
   ClipboardDocumentListIcon, Cog6ToothIcon,
   ArrowRightOnRectangleIcon, Bars3Icon, BellIcon,
   ChevronRightIcon, XMarkIcon, CpuChipIcon,
-  GlobeAltIcon, CalculatorIcon,
+  GlobeAltIcon, CalculatorIcon, CreditCardIcon,
 } from "@heroicons/react/24/outline"
 import { colors, typography } from "../styles"
 import lorriLogo from "../assets/lorri.png"
@@ -25,6 +25,7 @@ const navItems = [
   { label: "Create Shipment", Icon: PlusCircleIcon,            path: "/dashboard/create"         },
   { label: "Track Shipment",  Icon: MapPinIcon,                path: "/dashboard/track"          },
   { label: "Order History",   Icon: ClipboardDocumentListIcon, path: "/dashboard/orders"         },
+  { label: "Payments",        Icon: CreditCardIcon,            path: "/dashboard/payments"       },
   { label: "Freight Intel",   Icon: GlobeAltIcon,              path: "/dashboard/intelligence"   },
   { label: "Sustainability",  Icon: CpuChipIcon,               path: "/dashboard/sustainability" },
   { label: "ROI Calculator",  Icon: CalculatorIcon,            path: "/dashboard/roi"            },
