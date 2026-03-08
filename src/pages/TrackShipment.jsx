@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
 import {
   MagnifyingGlassIcon,
@@ -10,6 +10,7 @@ import {
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid"
 import { ShipmentMap } from "../components/ShipmentMap"
 import { colors, typography } from "../styles"
+import { shipments as shipmentsApi } from "../lib/api"
 
 const surface    = "#332B7A"
 const surfaceMid = "#3D3585"
@@ -19,7 +20,7 @@ const textSub    = "rgba(255,255,255,0.65)"
 const textFade   = "rgba(255,255,255,0.35)"
 const inputBg    = "rgba(255,255,255,0.06)"
 
-const recentlyViewed = ["SHP-2024-001", "SHP-2024-003", "SHP-2024-004", "SHP-2024-005", "SHP-2024-006"]
+const DEMO_IDS = ["SHP-2024-001", "SHP-2024-003", "SHP-2024-004", "SHP-2024-005", "SHP-2024-006"]
 
 const SHIPMENT_DB = {
   "SHP-2024-001": {
@@ -153,31 +154,166 @@ const STATUS_COLOR_MAP = {
   purple: { bg: "rgba(108,99,255,0.12)", bdr: "rgba(108,99,255,0.25)", text: "#A5B4FC"      },
 }
 
+// ── Map a real DB shipment → display shape ────────────────
+function dbToDisplay(s) {
+  const statusMap = {
+    pending:    { label: "Pending",    color: "amber", state: "truck-departed" },
+    in_transit: { label: "In Transit", color: "cyan",  state: "truck-moving"   },
+    delivered:  { label: "Delivered",  color: "green", state: "truck-moving"   },
+    delayed:    { label: "Delayed",    color: "amber", state: "truck-departed" },
+    cancelled:  { label: "Cancelled",  color: "purple",state: "truck-departed" },
+  }
+  const sm = statusMap[s.status] || statusMap.pending
+
+  // Build timeline from shipment_timeline if present, else generate from status
+  const tl = s.shipment_timeline?.length > 0
+    ? s.shipment_timeline.map(t => ({
+        label:  t.label,
+        sub:    t.sub || "",
+        status: t.status || "done",
+      }))
+    : [
+        { label: "Order Booked",  sub: `${s.origin_city} • ${new Date(s.created_at).toLocaleDateString("en-IN")}`, status: "done" },
+        { label: "Pickup Scheduled", sub: `${s.origin_city} • Pending`,   status: s.status !== "pending" ? "done" : "active" },
+        { label: "In Transit",    sub: s.status === "in_transit" ? "En route" : "Pending", status: s.status === "in_transit" ? "active" : s.status === "delivered" ? "done" : "pending" },
+        { label: "Delivered",     sub: `${s.dest_city} • ${s.status === "delivered" ? "Completed" : "Pending"}`, status: s.status === "delivered" ? "done" : "pending" },
+      ]
+
+  // Coords — use city lookup from RouteSelection CITY_COORDS equivalent
+  const COORDS = {
+    "navi mumbai": { lat: 19.033, lng: 73.029 },
+    mumbai:        { lat: 19.076, lng: 72.877 },
+    chennai:       { lat: 13.082, lng: 80.270 },
+    delhi:         { lat: 28.613, lng: 77.209 },
+    "new delhi":   { lat: 28.613, lng: 77.209 },
+    bangalore:     { lat: 12.971, lng: 77.594 },
+    bengaluru:     { lat: 12.971, lng: 77.594 },
+    hyderabad:     { lat: 17.385, lng: 78.486 },
+    pune:          { lat: 18.520, lng: 73.856 },
+    kolkata:       { lat: 22.572, lng: 88.363 },
+    ahmedabad:     { lat: 23.022, lng: 72.571 },
+    surat:         { lat: 21.170, lng: 72.831 },
+    jaipur:        { lat: 26.912, lng: 75.787 },
+    lucknow:       { lat: 26.846, lng: 80.946 },
+    nagpur:        { lat: 21.145, lng: 79.088 },
+    indore:        { lat: 22.719, lng: 75.857 },
+    coimbatore:    { lat: 11.016, lng: 76.955 },
+    kochi:         { lat: 9.931,  lng: 76.267 },
+    cochin:        { lat: 9.931,  lng: 76.267 },
+    visakhapatnam: { lat: 17.686, lng: 83.218 },
+    vadodara:      { lat: 22.307, lng: 73.181 },
+    bhopal:        { lat: 23.259, lng: 77.412 },
+    patna:         { lat: 25.594, lng: 85.137 },
+    chandigarh:    { lat: 30.733, lng: 76.779 },
+    nashik:        { lat: 19.997, lng: 73.789 },
+    madurai:       { lat: 9.925,  lng: 78.119 },
+    rajkot:        { lat: 22.303, lng: 70.802 },
+  }
+  const oKey = (s.origin_city || "").toLowerCase().trim()
+  const dKey = (s.dest_city   || "").toLowerCase().trim()
+  const oCoord = COORDS[oKey] || { lat: 19.076, lng: 72.877 }
+  const dCoord = COORDS[dKey] || { lat: 13.082, lng: 80.270 }
+
+  // Estimate progress for km display
+  const distanceKm = Math.round(
+    111 * Math.sqrt(Math.pow(oCoord.lat - dCoord.lat, 2) + Math.pow((oCoord.lng - dCoord.lng) * Math.cos(oCoord.lat * Math.PI / 180), 2)) * 1.35
+  )
+  const completedKm = s.status === "delivered" ? distanceKm : s.status === "in_transit" ? Math.round(distanceKm * 0.3) : 0
+  const remainingKm = distanceKm - completedKm
+
+  // Extract route name saved during booking (prefixed as "Route: ...")
+  const routePrefix = (s.special_instructions || "").match(/^Route: ([^|]+)/)
+  const savedRouteName = routePrefix ? routePrefix[1].trim() : null
+
+  return {
+    id:           s.tracking_number,
+    status:       sm.label,
+    statusColor:  sm.color,
+    route:        savedRouteName || `${s.origin_city} → ${s.dest_city}`,
+    carrier:      s.carrier || "—",
+    eta:          s.status === "delivered" ? "Delivered" : "TBD",
+    transportMode: s.transport_mode || "road",
+    shipmentState: sm.state,
+    vehicle:      `${s.equipment_type || "20ft"} · ${s.carrier || ""}`,
+    completedKm,
+    remainingKm,
+    origin:      { ...oCoord, name: s.origin_city },
+    current:     { ...oCoord, name: s.origin_city },   // real GPS would go here
+    destination: { ...dCoord, name: s.dest_city   },
+    ports: [],
+    timeline: tl,
+    cargo: [
+      { label: "Tracking No",  value: s.tracking_number },
+      { label: "Weight",       value: s.weight ? `${Number(s.weight).toLocaleString("en-IN")} ${s.weight_unit || "kg"}` : "—" },
+      { label: "Commodity",    value: s.commodity || s.cargo_type || "—" },
+      { label: "Carrier",      value: s.carrier || "—" },
+      { label: "Equipment",    value: s.equipment_type || "—" },
+      { label: "Incoterms",    value: (s.incoterms || "").toUpperCase() || "—" },
+    ],
+  }
+}
+
 export default function TrackShipment() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [trackingNumber, setTrackingNumber] = useState(searchParams.get("id") || "")
-  const [showTracking, setShowTracking]     = useState(!!searchParams.get("id"))
-  const [focused, setFocused]               = useState(false)
-  const [mapExpanded, setMapExpanded]       = useState(false)
+  const [trackingInput,  setTrackingInput]  = useState(searchParams.get("id") || "")
+  const [showTracking,   setShowTracking]   = useState(!!searchParams.get("id"))
+  const [focused,        setFocused]        = useState(false)
+  const [mapExpanded,    setMapExpanded]    = useState(false)
+
+  // Real shipment data
+  const [shipment,       setShipment]       = useState(null)
+  const [loadingShipment,setLoadingShipment]= useState(false)
+  const [shipmentError,  setShipmentError]  = useState("")
+
+  // Recent real shipments for quick chips
+  const [recentIds,      setRecentIds]      = useState([])
+
+  // Load recent shipments on mount for quick chips
+  useEffect(() => {
+    shipmentsApi.list({ limit: 5 }).then(data => {
+      const ids = (data.shipments || []).map(s => s.tracking_number).filter(Boolean)
+      setRecentIds(ids.length > 0 ? ids : DEMO_IDS)
+    }).catch(() => setRecentIds(DEMO_IDS))
+  }, [])
+
+  // Load shipment when tracking number changes
+  useEffect(() => {
+    const id = searchParams.get("id")
+    if (!id) return
+    setTrackingInput(id)
+    setShowTracking(true)
+    setLoadingShipment(true)
+    setShipmentError("")
+    setShipment(null)
+
+    shipmentsApi.get(id).then(data => {
+      if (data?.shipment) {
+        setShipment(dbToDisplay(data.shipment))
+      } else {
+        // Fall back to demo data for demo tracking numbers
+        const demo = SHIPMENT_DB[id]
+        if (demo) setShipment(demo)
+        else setShipmentError("Shipment not found")
+      }
+    }).catch(() => {
+      const demo = SHIPMENT_DB[id]
+      if (demo) setShipment(demo)
+      else setShipmentError("Could not load shipment")
+    }).finally(() => setLoadingShipment(false))
+  }, [searchParams])
 
   const handleTrack = (e) => {
     if (e) e.preventDefault()
-    if (trackingNumber.trim()) {
-      setShowTracking(true)
-      setSearchParams({ id: trackingNumber })
-    }
+    const id = trackingInput.trim()
+    if (id) setSearchParams({ id })
   }
 
   const handleQuickAccess = (id) => {
-    setTrackingNumber(id)
+    setTrackingInput(id)
     setSearchParams({ id })
-    setShowTracking(true)
   }
 
-  const shipment = SHIPMENT_DB[trackingNumber] || SHIPMENT_DB["SHP-2024-001"]
   const sc = STATUS_COLOR_MAP[shipment?.statusColor] || STATUS_COLOR_MAP.cyan
-
-  // Map height: explicit pixel value so Leaflet always gets a real dimension
   const mapHeight = mapExpanded ? "70vh" : 480
 
   return (
@@ -200,8 +336,8 @@ export default function TrackShipment() {
             <MagnifyingGlassIcon className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: textFade }} />
             <input
               type="text"
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
+              value={trackingInput}
+              onChange={(e) => setTrackingInput(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               placeholder="Enter tracking number (e.g. SHP-2024-001)"
@@ -234,14 +370,26 @@ export default function TrackShipment() {
           <span style={{ color: textFade, fontSize: typography.xs, fontWeight: typography.medium, letterSpacing: typography.wider, textTransform: "uppercase" }}>
             Recent:
           </span>
-          {recentlyViewed.map((id) => (
-            <QuickChip key={id} id={id} active={trackingNumber === id} onClick={() => handleQuickAccess(id)} />
+          {recentIds.map((id) => (
+            <QuickChip key={id} id={id} active={trackingInput === id} onClick={() => handleQuickAccess(id)} />
           ))}
         </div>
       </div>
 
       {/* Tracking results */}
       {showTracking ? (
+        loadingShipment ? (
+          <div className="rounded-2xl flex flex-col items-center justify-center py-24" style={{ background: surface, border: `1px solid ${border}` }}>
+            <div className="w-10 h-10 border-2 rounded-full animate-spin mb-4" style={{ borderColor: "rgba(255,255,255,0.1)", borderTopColor: colors.accent }} />
+            <p style={{ color: textSub, fontSize: typography.sm }}>Loading shipment…</p>
+          </div>
+        ) : shipmentError ? (
+          <div className="rounded-2xl flex flex-col items-center justify-center py-24" style={{ background: surface, border: `1px solid ${border}` }}>
+            <ExclamationTriangleIcon className="w-10 h-10 mb-4" style={{ color: colors.warning }} />
+            <p style={{ color: textOn, fontWeight: 600, marginBottom: 6 }}>{shipmentError}</p>
+            <p style={{ color: textSub, fontSize: typography.sm }}>Check the tracking number and try again</p>
+          </div>
+        ) : shipment ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* ── MAP: order-first on mobile so it renders at top with known dimensions ── */}
@@ -394,6 +542,7 @@ export default function TrackShipment() {
           </div>
 
         </div>
+        ) : null
       ) : (
         /* Empty state */
         <div

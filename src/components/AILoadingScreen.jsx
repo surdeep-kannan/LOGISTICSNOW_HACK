@@ -4,27 +4,30 @@ import { Player } from "@lottiefiles/react-lottie-player"
 import aiAnimation from "../assets/ai-loading.json"
 import { colors, typography } from "../styles"
 
-export default function AILoadingScreen({ onComplete }) {
+export default function AILoadingScreen({ onComplete, routeReady }) {
   const [statusText, setStatusText] = useState("Initialising AI Neural Engine...")
+  const [minDone,    setMinDone]    = useState(false)
 
   const phases = [
     { text: "Analyzing 1,400+ Route Combinations...", time: 1000 },
-    { text: "Optimizing for Fuel & Transit Time...", time: 2200 },
+    { text: "Optimizing for Fuel & Transit Time...",  time: 2200 },
     { text: "Syncing Real-time Port Congestion Data...", time: 3400 },
-    { text: "Finalising Best AI Recommendations...", time: 4600 },
+    { text: "Finalising Best AI Recommendations...", time: 4200 },
   ]
 
   useEffect(() => {
-    phases.forEach((phase) => {
-      setTimeout(() => setStatusText(phase.text), phase.time)
-    })
+    const timers = phases.map(p => setTimeout(() => setStatusText(p.text), p.time))
+    // Minimum display time so it never flashes away instantly
+    const minTimer = setTimeout(() => setMinDone(true), 4800)
+    return () => { timers.forEach(clearTimeout); clearTimeout(minTimer) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const timer = setTimeout(() => {
-      if (onComplete) onComplete()
-    }, 6000) // Slightly longer for "premium" feel
-
-    return () => clearTimeout(timer)
-  }, [onComplete])
+  // Dismiss only when BOTH minimum time is done AND route data is ready
+  useEffect(() => {
+    if (minDone && routeReady) {
+      onComplete?.()
+    }
+  }, [minDone, routeReady]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" 
@@ -105,13 +108,15 @@ export default function AILoadingScreen({ onComplete }) {
                 <motion.div 
                     className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-indigo-500"
                     initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: 6, ease: "easeInOut" }}
+                    animate={{ width: routeReady ? "100%" : "88%" }}
+                    transition={{ duration: routeReady ? 0.3 : 4.8, ease: "easeInOut" }}
                 />
             </div>
             <div className="flex justify-between px-1">
                 <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px", fontWeight: 700 }}>NEURAL LINK ACTIVE</span>
-                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px", fontWeight: 700 }}>PROCESSING...</span>
+                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px", fontWeight: 700 }}>
+                  {routeReady ? "READY" : "PROCESSING..."}
+                </span>
             </div>
         </div>
       </motion.div>
