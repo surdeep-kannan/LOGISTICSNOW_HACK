@@ -7,19 +7,27 @@ import {
   MapPinIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  XMarkIcon,
+  ShieldCheckIcon,
+  CreditCardIcon,
 } from "@heroicons/react/24/outline"
 import { RouteMap } from "./RouteMap"
 import { colors, typography } from "../styles"
-import { ai as aiApi, shipments as shipmentsApi } from "../lib/api"
+import { ai as aiApi, payments as paymentsApi } from "../lib/api"
 import { Player } from "@lottiefiles/react-lottie-player"
 import botAnimation from "../assets/bot.json"
+
+// ── PayPal Client ID ──────────────────────────────────────
+const PAYPAL_CLIENT_ID = "AX_sQHsHHbw6u7ZVvaa3nVzyqUT_sqmzBoBS55V4y_ayfZHdtIpf4AF2AWosVfiE9AfpzYZbW2NH27bO"
+
+// INR → USD conversion (approximate, update as needed)
+const INR_TO_USD = 83.5
 
 const ROUTES_CACHE_KEY = "lorri_route_cache"
 
 const surface     = "#332B7A"
 const surfaceMid  = "#3D3585"
 const surfaceDark = "#1E1856"
-// AI card exclusive palette — distinct from standard routes
 const aiCardBg     = "#1A1145"
 const aiCardMid    = "#231760"
 const aiCardBorder = "rgba(139,92,246,0.35)"
@@ -31,9 +39,6 @@ const textOn      = "rgba(255,255,255,0.95)"
 const textSub     = "rgba(255,255,255,0.65)"
 const textFade    = "rgba(255,255,255,0.35)"
 
-// ── Indian city geocode table (lat/lng) ───────────────────
-// Covers all major Indian logistics hubs. Falls back to
-// Nominatim for anything not in this list.
 const CITY_COORDS = {
   mumbai:      { lat: 19.0760,  lng: 72.8777 },
   chennai:     { lat: 13.0827,  lng: 80.2707 },
@@ -77,7 +82,6 @@ const CITY_COORDS = {
   tirupur:     { lat: 11.1085,  lng: 77.3411 },
   raipur:      { lat: 21.2514,  lng: 81.6296 },
   ranchi:      { lat: 23.3441,  lng: 85.3096 },
-  // Ports
   jnpt:        { lat: 18.9322,  lng: 72.8375 },
   kandla:      { lat: 23.0333,  lng: 70.2167 },
   singapore:   { lat: 1.2966,   lng: 103.8520 },
@@ -85,16 +89,11 @@ const CITY_COORDS = {
   "new delhi": { lat: 28.6139,  lng: 77.2090 },
 }
 
-// ── Geocode a city name → {lat, lng} ─────────────────────
 async function geocodeCity(cityName, stateName = "") {
   const key = cityName.toLowerCase().trim()
   if (CITY_COORDS[key]) return CITY_COORDS[key]
-
-  // Try state+city combo in table first
   const fullKey = `${key} ${stateName.toLowerCase().trim()}`
   if (CITY_COORDS[fullKey]) return CITY_COORDS[fullKey]
-
-  // Fallback: Nominatim (free, no key)
   try {
     const q = encodeURIComponent(`${cityName}${stateName ? ", " + stateName : ""}, India`)
     const res = await fetch(
@@ -102,16 +101,11 @@ async function geocodeCity(cityName, stateName = "") {
       { headers: { "User-Agent": "LoRRI.ai/1.0" } }
     )
     const data = await res.json()
-    if (data?.[0]) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
-    }
+    if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
   } catch (_) {}
-
-  // Hard fallback — centre of India
   return { lat: 20.5937, lng: 78.9629 }
 }
 
-// ── Get real road distance from OSRM ─────────────────────
 async function getOSRMDistance(origin, destination) {
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=false`
@@ -126,50 +120,31 @@ async function getOSRMDistance(origin, destination) {
   return null
 }
 
-// ── Compute real transit days based on mode + distance ───
-// Uses realistic Indian logistics speeds:
-//   Road express: avg 600 km/day (NH highways)
-//   Road standard: avg 450 km/day
-//   Rail: avg 400 km/day (Indian Railways freight)
-//   Air: ~4hr flight + 1 day handling = 1-2 days always
-//   Sea coastal: 12-15 knots = ~500 km/day
-function calcTransitDays(distanceKm, mode, serviceLevel) {
+function calcTransitDays(distanceKm) {
   if (!distanceKm) return { express: 2, standard: 3, economy: 4, rail: 5 }
-
-  const roadExpressKmPerDay  = 600
-  const roadStdKmPerDay      = 450
-  const roadEcoKmPerDay      = 350
-  const railKmPerDay         = 380
-  const seaKmPerDay          = 480
-
   const ceil1 = (n) => Math.max(1, Math.ceil(n))
-
   return {
-    express:  ceil1(distanceKm / roadExpressKmPerDay),
-    standard: ceil1(distanceKm / roadStdKmPerDay),
-    economy:  ceil1(distanceKm / roadEcoKmPerDay),
-    rail:     ceil1(distanceKm / railKmPerDay),
-    sea:      ceil1(distanceKm / seaKmPerDay),
+    express:  ceil1(distanceKm / 600),
+    standard: ceil1(distanceKm / 450),
+    economy:  ceil1(distanceKm / 350),
+    rail:     ceil1(distanceKm / 380),
+    sea:      ceil1(distanceKm / 480),
     air:      distanceKm > 1500 ? 2 : 1,
   }
 }
 
-// ── Format ETA date from readyDate + transitDays ─────────
 function calcETA(readyDate, transitDays) {
   const base = readyDate ? new Date(readyDate) : new Date()
-  // Add transit days, skip Sundays (Indian logistics)
   let d = new Date(base)
   let daysAdded = 0
   while (daysAdded < transitDays) {
     d.setDate(d.getDate() + 1)
-    if (d.getDay() !== 0) daysAdded++ // skip Sunday
+    if (d.getDay() !== 0) daysAdded++
   }
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
 }
 
-// ── Cost estimator based on distance + weight + mode ─────
 function estimateCost(distanceKm, weightKg, mode, tier) {
-  // Base rate per km per tonne (INR) — real Indian freight market rates 2024
   const rates = {
     road:  { express: 4.2,  standard: 3.1,  economy: 2.4  },
     rail:  { express: 2.8,  standard: 2.0,  economy: 1.6  },
@@ -180,19 +155,16 @@ function estimateCost(distanceKm, weightKg, mode, tier) {
   const rate      = modeRates[tier] || modeRates.standard
   const weightT   = (weightKg || 1000) / 1000
   const base      = rate * distanceKm * weightT
-  // Add fixed handling charges
   const handling  = mode === "air" ? 8000 : mode === "sea" ? 15000 : 3500
   return Math.round(base + handling)
 }
 
-// ── Build route data dynamically ─────────────────────────
 function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
-  const weight     = parseFloat(formData.totalWeight) || 1000
-  const mode       = formData.transportMode || "road"
-  const ready      = formData.readyDate
-  const transit    = calcTransitDays(distanceKm, mode)
+  const weight  = parseFloat(formData.totalWeight) || 1000
+  const mode    = formData.transportMode || "road"
+  const ready   = formData.readyDate
+  const transit = calcTransitDays(distanceKm)
 
-  // Generate waypoint coordinates along the route
   const midLat = (originCoords.lat + destCoords.lat) / 2
   const midLng = (originCoords.lng + destCoords.lng) / 2
   const slight = 0.8
@@ -214,9 +186,7 @@ function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
     [destCoords.lat, destCoords.lng],
   ]
 
-  // If AI returned real routes, use those names/carriers; else use smart defaults
-  const ai1 = aiData?.routes?.[0]
-  // Deduplicate: if ai2 has same name or carrier as ai1, ignore it and use fallback
+  const ai1    = aiData?.routes?.[0]
   const ai2Raw = aiData?.routes?.[1]
   const isDupe = ai2Raw && ai1 && (
     ai2Raw.name?.toLowerCase().trim() === ai1.name?.toLowerCase().trim() ||
@@ -224,68 +194,59 @@ function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
   )
   const ai2 = isDupe ? null : ai2Raw
 
-  const expressTransit = transit.express
-  const stdTransit     = transit.standard
-
-  const expressCost = estimateCost(distanceKm, weight, mode, "express")
-  const stdCost     = estimateCost(distanceKm, weight, mode, "standard")
-  const ecoCost     = estimateCost(distanceKm, weight, mode, "economy")
-  const railCost    = estimateCost(distanceKm, weight, "rail", "standard")
-
+  const expressCost       = estimateCost(distanceKm, weight, mode, "express")
+  const stdCost           = estimateCost(distanceKm, weight, mode, "standard")
+  const ecoCost           = estimateCost(distanceKm, weight, mode, "economy")
+  const railCost          = estimateCost(distanceKm, weight, "rail", "standard")
   const marketExpressCost = Math.round(expressCost * 1.18)
-  const marketStdCost     = Math.round(stdCost     * 1.15)
+  const marketStdCost     = Math.round(stdCost * 1.15)
 
-  // Build city stops between origin and dest
   const originCity = formData.originCity
   const destCity   = formData.destCity
-
-  // Pick midpoint cities based on state (simplified)
-  const stopsExpress  = [originCity, destCity]
-  const stopsEconomy  = [originCity, "Junction Hub", destCity]
 
   const aiRoutes = [
     {
       id: "ai-1",
-      name:          ai1?.name      || `Express ${mode === "air" ? "Air" : "Highway"} Route`,
-      carrier:       ai1?.carrier   || (mode === "air" ? "IndiGo Cargo" : mode === "rail" ? "CONCOR" : "VRL Logistics"),
+      name:          ai1?.name    || `Express ${mode === "air" ? "Air" : "Highway"} Route`,
+      carrier:       ai1?.carrier || (mode === "air" ? "IndiGo Cargo" : mode === "rail" ? "CONCOR" : "VRL Logistics"),
       type:          mode === "air" ? "Air Freight" : mode === "rail" ? "Rail Freight" : "Direct Highway",
-      transitDays:   expressTransit,
+      transitDays:   transit.express,
       cost:          expressCost,
       distance:      distanceKm,
       reliability:   98,
       onTimeRate:    ai1?.on_time_pct || 97,
       co2:           Math.round(distanceKm * 0.18),
-      stops:         stopsExpress,
-      features:      (ai1?.highlights?.length > 0) ? ai1.highlights : ["Real-time tracking", "Priority handling", "24/7 support", "Insurance included"],
+      stops:         [originCity, destCity],
+      features:      ai1?.highlights?.length > 0 ? ai1.highlights : ["Real-time tracking", "Priority handling", "24/7 support", "Insurance included"],
       aiRecommended: true,
       savings:       marketExpressCost - expressCost,
       savingsPercent: Math.round(((marketExpressCost - expressCost) / marketExpressCost) * 100),
       reason:        ai1?.name
-        ? `AI selected ${ai1.name} via ${ai1.carrier} for your ${formData.cargoType} cargo (${weight}kg) on the ${formData.originCity}–${formData.destCity} corridor. Fastest available option.`
-        : `Fastest available route for ${weight}kg of ${formData.cargoType || "general"} cargo. ${expressTransit} day${expressTransit > 1 ? "s" : ""} transit over ${distanceKm}km.`,
-      eta:           calcETA(ready, expressTransit),
+        ? `AI selected ${ai1.name} via ${ai1.carrier} for your ${formData.cargoType} cargo (${weight}kg). Fastest available option.`
+        : `Fastest available route for ${weight}kg of ${formData.cargoType || "general"} cargo. ${transit.express} day transit over ${distanceKm}km.`,
+      eta:              calcETA(ready, transit.express),
       routeCoordinates: routeCoords1,
     },
     {
       id: "ai-2",
-      name:          ai2?.name      || "Economy Optimized Route",
-      carrier:       ai2?.carrier   || (mode === "rail" ? "Indian Railways Freight" : mode === "air" ? "SpiceJet Cargo" : "TCI Freight"),
+      name:          ai2?.name    || "Economy Optimized Route",
+      carrier:       ai2?.carrier || (mode === "rail" ? "Indian Railways Freight" : mode === "air" ? "SpiceJet Cargo" : "TCI Freight"),
       type:          mode === "air" ? "Air Freight" : mode === "rail" ? "Rail Freight" : "Multi-modal",
-      transitDays:   stdTransit,
+      transitDays:   transit.standard,
       cost:          stdCost,
       distance:      Math.round(distanceKm * 1.06),
       reliability:   95,
       onTimeRate:    ai2?.on_time_pct || 94,
       co2:           Math.round(distanceKm * 0.14),
-      stops:         stopsEconomy,
-      features:      (ai2?.highlights?.length > 0) ? ai2.highlights : ["Cost-optimized", "Reliable carrier", "Live tracking", "Standard insurance"],
+      stops:         [originCity, "Junction Hub", destCity],
+      features:      ai2?.highlights?.length > 0 ? ai2.highlights : ["Cost-optimized", "Reliable carrier", "Live tracking", "Standard insurance"],
       aiRecommended: true,
       savings:       marketStdCost - stdCost,
       savingsPercent: Math.round(((marketStdCost - stdCost) / marketStdCost) * 100),
       reason:        ai2?.name
-        ? `AI selected ${ai2.name} via ${ai2.carrier}. Best cost-to-transit balance for your shipment profile.`
-        : `Best cost-to-transit ratio. Saves ₹${(marketStdCost - stdCost).toLocaleString("en-IN")} vs market rate on this lane.`,
-      eta:           calcETA(ready, stdTransit),
+        ? `AI selected ${ai2.name} via ${ai2.carrier}. Best cost-to-transit balance.`
+        : `Best cost-to-transit ratio. Saves ₹${(marketStdCost - stdCost).toLocaleString("en-IN")} vs market rate.`,
+      eta:              calcETA(ready, transit.standard),
       routeCoordinates: routeCoords2,
     },
   ]
@@ -296,11 +257,11 @@ function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
       name: "Standard Direct",
       carrier: mode === "air" ? "Air India Cargo" : "Blue Dart Cargo",
       type: mode === "air" ? "Air Freight" : "Highway Direct",
-      transitDays: stdTransit,
+      transitDays: transit.standard,
       cost: Math.round(stdCost * 1.06),
       distance: distanceKm,
       onTimeRate: 90,
-      eta: calcETA(ready, stdTransit),
+      eta: calcETA(ready, transit.standard),
       features: ["Standard tracking", "Basic insurance", "Business hours support"],
       routeCoordinates: routeCoords1,
     },
@@ -349,13 +310,292 @@ function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
 }
 
 // ─────────────────────────────────────────────────────────
-// MAIN COMPONENT
+//  PayPal Modal Component
+// ─────────────────────────────────────────────────────────
+function PayPalModal({ route, formData, onClose, onSuccess }) {
+  const ppContainerRef = useRef(null)
+  const renderedRef    = useRef(false)
+  const [ppReady,   setPpReady]   = useState(false)
+  const [ppError,   setPpError]   = useState("")
+  const [processing, setProcessing] = useState(false)
+  const [paid,      setPaid]      = useState(false)
+  const [txId,      setTxId]      = useState("")
+
+  const amountUSD = Math.max(1, (route.cost / INR_TO_USD)).toFixed(2)
+
+  // Load PayPal SDK script once
+  useEffect(() => {
+    if (document.getElementById("paypal-sdk")) { setPpReady(true); return }
+    const script = document.createElement("script")
+    script.id  = "paypal-sdk"
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`
+    script.onload  = () => setPpReady(true)
+    script.onerror = () => setPpError("Failed to load PayPal. Check your connection.")
+    document.head.appendChild(script)
+  }, [])
+
+  // Render PayPal buttons once SDK is ready
+  useEffect(() => {
+    if (!ppReady || !ppContainerRef.current || renderedRef.current) return
+    if (!window.paypal) { setPpError("PayPal SDK not available."); return }
+
+    renderedRef.current = true
+
+    window.paypal.Buttons({
+      style: {
+        layout:  "vertical",
+        color:   "gold",
+        shape:   "rect",
+        label:   "pay",
+        height:  48,
+      },
+
+      createOrder: (data, actions) => {
+        return actions.order.create({
+          purchase_units: [{
+            amount: {
+              value:         amountUSD,
+              currency_code: "USD",
+            },
+            description: `LoRRI.ai Freight - ${route.name} · ${formData.originCity} → ${formData.destCity}`,
+          }],
+          application_context: {
+            brand_name:          "LoRRI.ai",
+            shipping_preference: "NO_SHIPPING",
+          },
+        })
+      },
+
+      onApprove: async (data, actions) => {
+        setProcessing(true)
+        setPpError("")
+        try {
+          // Capture on PayPal side
+          const order = await actions.order.capture()
+
+          // Now send to our backend: verify + save payment + create shipment
+          const result = await paymentsApi.capture({
+            paypal_order_id: order.id,
+            amount_inr:      route.cost,
+            route_data: {
+              name:        route.name,
+              carrier:     route.carrier,
+              from:        `${formData.originCity}, ${formData.originState}`,
+              to:          `${formData.destCity}, ${formData.destState}`,
+              transitDays: route.transitDays,
+            },
+            shipment_data: {
+              origin_company:  formData.originCompany,
+              origin_contact:  formData.originContact,
+              origin_phone:    formData.originPhone,
+              origin_email:    formData.originEmail,
+              origin_address:  formData.originAddress,
+              origin_city:     formData.originCity,
+              origin_state:    formData.originState,
+              origin_zip:      formData.originZip,
+              origin_country:  formData.originCountry,
+              dest_company:    formData.destCompany,
+              dest_contact:    formData.destContact,
+              dest_phone:      formData.destPhone,
+              dest_email:      formData.destEmail,
+              dest_address:    formData.destAddress,
+              dest_city:       formData.destCity,
+              dest_state:      formData.destState,
+              dest_zip:        formData.destZip,
+              dest_country:    formData.destCountry,
+              cargo_type:      formData.cargoType,
+              commodity:       formData.commodityDescription,
+              hs_code:         formData.hsCode,
+              pieces:          parseInt(formData.numberOfPieces) || 1,
+              weight:          parseFloat(formData.totalWeight)  || 0,
+              weight_unit:     formData.weightUnit,
+              dimensions:      formData.dimensions,
+              volume:          parseFloat(formData.volume) || null,
+              volume_unit:     formData.volumeUnit,
+              declared_value:  parseFloat(formData.declaredValue) || null,
+              currency:        formData.currency,
+              carrier:         route.carrier,
+              service_level:   formData.serviceLevel,
+              transport_mode:  formData.transportMode,
+              equipment_type:  formData.equipmentType,
+              incoterms:       formData.incoterms,
+              special_instructions: [
+                `Route: ${route.name} via ${route.carrier}`,
+                formData.specialInstructions,
+              ].filter(Boolean).join(" | "),
+              insurance_required: formData.insuranceRequired,
+              insurance_value:    parseFloat(formData.insuranceValue) || null,
+              po_number:          formData.poNumber,
+              invoice_number:     formData.invoiceNumber,
+            },
+          })
+
+          // Clear session caches
+          try {
+            sessionStorage.removeItem("lorri_route_cache")
+            sessionStorage.removeItem("lorri_show_route")
+            sessionStorage.removeItem("lorri_form_data")
+          } catch (_) {}
+
+          setTxId(result.tracking_number || order.id)
+          setPaid(true)
+          setTimeout(() => onSuccess(result.tracking_number), 1800)
+
+        } catch (err) {
+          setPpError(err.message || "Payment processing failed. Please try again.")
+          setProcessing(false)
+        }
+      },
+
+      onError: (err) => {
+        console.error("PayPal error:", err)
+        setPpError("PayPal encountered an error. Please try again.")
+        setProcessing(false)
+      },
+
+      onCancel: () => {
+        setPpError("Payment was cancelled.")
+      },
+    }).render(ppContainerRef.current)
+
+  }, [ppReady]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
+        onClick={(e) => { if (e.target === e.currentTarget && !processing) onClose() }}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 28 }}
+          className="w-full max-w-md rounded-2xl overflow-hidden"
+          style={{ background: "#13104A", border: "1px solid rgba(255,255,255,0.12)" }}
+        >
+          {/* Header */}
+          <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#1A1756" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0077B6,#00B4D8)" }}>
+                <CreditCardIcon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div style={{ color: textOn, fontWeight: 700, fontSize: typography.base }}>Complete Payment</div>
+                <div style={{ color: textFade, fontSize: typography.xs }}>Secure checkout via PayPal</div>
+              </div>
+            </div>
+            {!processing && !paid && (
+              <button onClick={onClose} className="rounded-lg p-1.5 transition-colors" style={{ color: textFade }} onMouseEnter={e => e.currentTarget.style.color = textOn} onMouseLeave={e => e.currentTarget.style.color = textFade}>
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Order summary */}
+          <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex-1 min-w-0">
+                  <div style={{ color: textOn, fontWeight: 700, fontSize: typography.sm, marginBottom: 2 }}>{route.name}</div>
+                  <div style={{ color: textFade, fontSize: typography.xs }}>{route.carrier} · {route.transitDays} day{route.transitDays !== 1 ? "s" : ""} transit</div>
+                </div>
+                {route.aiRecommended && (
+                  <span style={{ background: "linear-gradient(135deg,#7C3AED,#4F46E5)", color: "white", fontSize: "9px", fontWeight: 800, padding: "2px 8px", borderRadius: 20, flexShrink: 0 }}>✦ AI PICK</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 mb-3" style={{ color: textFade, fontSize: typography.xs }}>
+                <MapPinIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{formData.originCity}, {formData.originState} → {formData.destCity}, {formData.destState}</span>
+              </div>
+
+              {/* Price breakdown */}
+              <div className="space-y-1.5 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="flex justify-between">
+                  <span style={{ color: textFade, fontSize: typography.xs }}>Freight cost</span>
+                  <span style={{ color: textSub, fontSize: typography.xs }}>₹{route.cost.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: textFade, fontSize: typography.xs }}>Charged in USD</span>
+                  <span style={{ color: textSub, fontSize: typography.xs }}>${amountUSD}</span>
+                </div>
+                <div className="flex justify-between pt-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <span style={{ color: textOn, fontWeight: 700, fontSize: typography.sm }}>Total</span>
+                  <div className="text-right">
+                    <div style={{ color: colors.accent, fontWeight: 800, fontSize: typography.lg }}>₹{route.cost.toLocaleString("en-IN")}</div>
+                    <div style={{ color: textFade, fontSize: "10px" }}>≈ ${amountUSD} USD</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* PayPal button area */}
+          <div className="px-6 py-5">
+            {paid ? (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="rounded-xl p-5 text-center"
+                style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)" }}
+              >
+                <div className="text-4xl mb-3">✅</div>
+                <div style={{ color: "#4ADE80", fontWeight: 800, fontSize: typography.base, marginBottom: 4 }}>Payment Successful!</div>
+                <div style={{ color: textSub, fontSize: typography.xs, marginBottom: 8 }}>Shipment booked · Redirecting to tracking…</div>
+                {txId && <div style={{ color: textFade, fontSize: "10px", fontFamily: "monospace" }}>Ref: {txId}</div>}
+              </motion.div>
+            ) : processing ? (
+              <div className="rounded-xl p-5 text-center" style={{ background: "rgba(0,180,216,0.08)", border: "1px solid rgba(0,180,216,0.2)" }}>
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />
+                  <span style={{ color: colors.accent, fontWeight: 600, fontSize: typography.sm }}>Processing payment…</span>
+                </div>
+                <div style={{ color: textFade, fontSize: typography.xs }}>Please wait, do not close this window</div>
+              </div>
+            ) : (
+              <>
+                {!ppReady && !ppError && (
+                  <div className="flex items-center justify-center gap-2 py-4">
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                    <span style={{ color: textFade, fontSize: typography.xs }}>Loading PayPal…</span>
+                  </div>
+                )}
+                {ppError && (
+                  <div className="rounded-lg p-3 mb-3 flex items-start gap-2" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                    <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#FCA5A5" }} />
+                    <p style={{ color: "#FCA5A5", fontSize: typography.xs }}>{ppError}</p>
+                  </div>
+                )}
+                <div ref={ppContainerRef} className="min-h-[50px]" />
+              </>
+            )}
+
+            {/* Security note */}
+            {!paid && !processing && (
+              <div className="flex items-center justify-center gap-1.5 mt-4">
+                <ShieldCheckIcon className="w-3.5 h-3.5" style={{ color: textFade }} />
+                <span style={{ color: textFade, fontSize: "10px" }}>256-bit SSL · Secured by PayPal</span>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────
 export function RouteSelection({ formData, onBack, onReady }) {
   const [selectedRoute, setSelectedRoute] = useState("ai-1")
   const [showMap,       setShowMap]       = useState(false)
 
-  // Real data state
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState("")
   const [aiRoutes,      setAiRoutes]      = useState([])
@@ -364,15 +604,13 @@ export function RouteSelection({ formData, onBack, onReady }) {
   const [destCoords,    setDestCoords]    = useState(null)
   const [distanceKm,    setDistanceKm]    = useState(null)
 
-  // Booking state
-  const [booking,       setBooking]       = useState(false)
+  // Payment modal state
+  const [showPayModal,  setShowPayModal]  = useState(false)
   const [booked,        setBooked]        = useState(false)
-  const [bookingError,  setBookingError]  = useState("")
   const [trackingNumber, setTrackingNumber] = useState("")
 
   const fetchedRef = useRef(false)
 
-  // ── On mount: load from cache OR fetch fresh ─────────────
   useEffect(() => {
     if (fetchedRef.current) return
     fetchedRef.current = true
@@ -381,13 +619,11 @@ export function RouteSelection({ formData, onBack, onReady }) {
       setLoading(true)
       setError("")
 
-      // ── Try cache first ───────────────────────────────────
       try {
         const cached = sessionStorage.getItem(ROUTES_CACHE_KEY)
         if (cached) {
           const c = JSON.parse(cached)
-          // Cache is valid if origin+dest+mode match AND it was built today
-      const today = new Date().toISOString().split("T")[0]
+          const today = new Date().toISOString().split("T")[0]
           if (
             c.originCity === formData.originCity &&
             c.destCity   === formData.destCity   &&
@@ -407,7 +643,6 @@ export function RouteSelection({ formData, onBack, onReady }) {
       } catch (_) {}
 
       try {
-        // 1. Geocode origin + destination in parallel
         const [oc, dc] = await Promise.all([
           geocodeCity(formData.originCity, formData.originState),
           geocodeCity(formData.destCity,   formData.destState),
@@ -415,7 +650,6 @@ export function RouteSelection({ formData, onBack, onReady }) {
         setOriginCoords(oc)
         setDestCoords(dc)
 
-        // 2. Get real road distance from OSRM
         const osrm = await getOSRMDistance(oc, dc)
         const km   = osrm?.distanceKm || Math.round(
           111 * Math.sqrt(
@@ -425,7 +659,6 @@ export function RouteSelection({ formData, onBack, onReady }) {
         )
         setDistanceKm(km)
 
-        // 3. Call real AI route endpoint
         let aiData = null
         try {
           aiData = await aiApi.route({
@@ -437,15 +670,13 @@ export function RouteSelection({ formData, onBack, onReady }) {
             priority:       formData.serviceLevel === "economy" ? "cost" : formData.serviceLevel === "express" ? "speed" : "balanced",
           })
         } catch (aiErr) {
-          console.warn("AI route fetch failed, using smart defaults:", aiErr.message)
+          console.warn("AI route fetch failed:", aiErr.message)
         }
 
-        // 4. Build all routes with real data
         const { aiRoutes: ar, normalRoutes: nr } = buildRoutes(formData, oc, dc, km, aiData)
         setAiRoutes(ar)
         setNormalRoutes(nr)
 
-        // 5. Cache the result so navigating away & back doesn't re-fetch
         try {
           sessionStorage.setItem(ROUTES_CACHE_KEY, JSON.stringify({
             originCity:    formData.originCity,
@@ -479,7 +710,7 @@ export function RouteSelection({ formData, onBack, onReady }) {
     init()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const allRoutes        = [...aiRoutes, ...normalRoutes]
+  const allRoutes         = [...aiRoutes, ...normalRoutes]
   const selectedRouteData = allRoutes.find(r => r.id === selectedRoute)
 
   const origin      = originCoords
@@ -489,7 +720,6 @@ export function RouteSelection({ formData, onBack, onReady }) {
     ? { ...destCoords, name: `${formData.destCity}, ${formData.destState}` }
     : { lat: 13.082, lng: 80.270, name: formData.destCity }
 
-  // ── Loading skeleton ──
   if (loading) {
     return (
       <div className="w-full">
@@ -498,7 +728,6 @@ export function RouteSelection({ formData, onBack, onReady }) {
           <div className="h-9 w-56 rounded-xl animate-pulse mb-3" style={{ background: surfaceMid }} />
           <div className="h-5 w-80 rounded-lg animate-pulse" style={{ background: surfaceMid }} />
         </div>
-        {/* AI thinking banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl p-5 mb-5 flex items-center gap-4"
@@ -507,17 +736,12 @@ export function RouteSelection({ formData, onBack, onReady }) {
             <Player autoplay loop src={botAnimation} style={{ width: 28, height: 28 }} />
           </div>
           <div>
-            <p style={{ color: textOn, fontWeight: 600, fontSize: typography.sm }}>
-              LoRRI AI is analysing your route…
-            </p>
-            <p style={{ color: textFade, fontSize: typography.xs, marginTop: 3 }}>
-              Geocoding cities · Measuring real road distance · Generating AI-optimised options
-            </p>
+            <p style={{ color: textOn, fontWeight: 600, fontSize: typography.sm }}>LoRRI AI is analysing your route…</p>
+            <p style={{ color: textFade, fontSize: typography.xs, marginTop: 3 }}>Geocoding cities · Measuring real road distance · Generating AI-optimised options</p>
           </div>
           <div className="ml-auto flex gap-1">
             {[0, 1, 2].map(i => (
-              <motion.div key={i} className="w-2 h-2 rounded-full"
-                style={{ background: "#6C63FF" }}
+              <motion.div key={i} className="w-2 h-2 rounded-full" style={{ background: "#6C63FF" }}
                 animate={{ opacity: [0.3, 1, 0.3] }}
                 transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }} />
             ))}
@@ -537,6 +761,21 @@ export function RouteSelection({ formData, onBack, onReady }) {
 
   return (
     <div className="w-full">
+      {/* PayPal Modal */}
+      {showPayModal && selectedRouteData && (
+        <PayPalModal
+          route={selectedRouteData}
+          formData={formData}
+          onClose={() => setShowPayModal(false)}
+          onSuccess={(trackingNo) => {
+            setShowPayModal(false)
+            setTrackingNumber(trackingNo || "")
+            setBooked(true)
+            setTimeout(() => { window.location.href = "/dashboard/track" }, 1000)
+          }}
+        />
+      )}
+
       {/* Header */}
       <div className="mb-5">
         <BackButton onClick={onBack} />
@@ -549,7 +788,6 @@ export function RouteSelection({ formData, onBack, onReady }) {
         </p>
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="rounded-xl p-3 mb-4 flex items-center gap-2" style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)" }}>
           <ExclamationTriangleIcon className="w-4 h-4 shrink-0" style={{ color: colors.warning }} />
@@ -566,78 +804,35 @@ export function RouteSelection({ formData, onBack, onReady }) {
       {/* Layout */}
       <div className="xl:grid xl:grid-cols-12 xl:gap-5 relative" style={{ minHeight: "60vh" }}>
 
-        {/* ── Left: Route list ── */}
+        {/* Left: Route list */}
         <div
           className={`xl:col-span-5 space-y-5 xl:overflow-y-auto xl:pr-1 ${showMap ? "xl:block hidden" : "block"}`}
           style={{ maxHeight: "calc(100vh - 260px)" }}
         >
-          {/* AI Recommended */}
           <section>
-            {/* ── AI Hero Banner ── */}
             <div className="rounded-2xl p-4 mb-4 relative overflow-hidden" style={{
               background: "linear-gradient(135deg, #0D0B2E 0%, #1A0F4F 40%, #120B3A 100%)",
               border: `1px solid ${aiCardBorder}`,
               boxShadow: "0 0 40px rgba(139,92,246,0.15)",
             }}>
-              {/* Animated background orbs */}
-              <div style={{
-                position: "absolute", top: -20, right: -20, width: 120, height: 120,
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{
-                position: "absolute", bottom: -30, left: 20, width: 100, height: 100,
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              {/* Top shimmer line */}
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, height: 1,
-                background: `linear-gradient(90deg, transparent 0%, ${aiAccent} 40%, ${aiAccentEnd} 60%, transparent 100%)`,
-              }} />
-
+              <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", bottom: -30, left: 20, width: 100, height: 100, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent 0%, ${aiAccent} 40%, ${aiAccentEnd} 60%, transparent 100%)` }} />
               <div className="relative flex items-center gap-3">
-                {/* Big bot animation */}
                 <div className="shrink-0 relative">
-                  <div style={{
-                    width: 72, height: 72,
-                    borderRadius: "1.25rem",
-                    background: "rgba(139,92,246,0.15)",
-                    border: "1px solid rgba(139,92,246,0.3)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    overflow: "hidden",
-                  }}>
+                  <div style={{ width: 72, height: 72, borderRadius: "1.25rem", background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                     <Player autoplay loop src={botAnimation} style={{ width: 64, height: 64 }} />
                   </div>
-                  {/* Pulsing ring */}
-                  <motion.div
-                    animate={{ scale: [1, 1.18, 1], opacity: [0.5, 0, 0.5] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                    style={{
-                      position: "absolute", inset: -4,
-                      borderRadius: "1.5rem",
-                      border: "1.5px solid rgba(139,92,246,0.4)",
-                      pointerEvents: "none",
-                    }}
-                  />
+                  <motion.div animate={{ scale: [1, 1.18, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ position: "absolute", inset: -4, borderRadius: "1.5rem", border: "1.5px solid rgba(139,92,246,0.4)", pointerEvents: "none" }} />
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span style={{
-                      background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
-                      color: "white", fontSize: "9px", fontWeight: 800,
-                      padding: "2px 8px", borderRadius: 20,
-                      letterSpacing: "0.08em",
-                    }}>✦ AI POWERED</span>
+                    <span style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)", color: "white", fontSize: "9px", fontWeight: 800, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>✦ AI POWERED</span>
                   </div>
-                  <h2 style={{ color: textOn, fontWeight: 800, fontSize: typography.lg, lineHeight: 1.2, marginBottom: 4 }}>
-                    LoRRI AI Routes
-                  </h2>
+                  <h2 style={{ color: textOn, fontWeight: 800, fontSize: typography.lg, lineHeight: 1.2, marginBottom: 4 }}>LoRRI AI Routes</h2>
                   <p style={{ color: "rgba(196,181,253,0.75)", fontSize: typography.xs, lineHeight: 1.5 }}>
-                    Analysed {(Math.floor(Math.random() * 40) + 80)} carrier options · Optimized for your cargo
+                    Analysed {Math.floor(Math.random() * 40) + 80} carrier options · Optimized for your cargo
                   </p>
                   <div className="flex items-center gap-3 mt-2">
                     {["Cost", "Speed", "Reliability"].map((tag) => (
@@ -652,18 +847,12 @@ export function RouteSelection({ formData, onBack, onReady }) {
             </div>
             <div className="space-y-4">
               {aiRoutes.map((route, i) => (
-                <AIRouteCard
-                  key={route.id}
-                  route={route}
-                  active={selectedRoute === route.id}
-                  delay={i * 0.08}
-                  onClick={() => { setSelectedRoute(route.id); setShowMap(true) }}
-                />
+                <AIRouteCard key={route.id} route={route} active={selectedRoute === route.id} delay={i * 0.08}
+                  onClick={() => { setSelectedRoute(route.id); setShowMap(true) }} />
               ))}
             </div>
           </section>
 
-          {/* Standard Routes */}
           <section>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: surfaceMid, border: `1px solid ${border}` }}>
@@ -676,24 +865,18 @@ export function RouteSelection({ formData, onBack, onReady }) {
             </div>
             <div className="space-y-3">
               {normalRoutes.map((route, i) => (
-                <NormalRouteCard
-                  key={route.id}
-                  route={route}
-                  active={selectedRoute === route.id}
-                  delay={0.16 + i * 0.07}
-                  onClick={() => { setSelectedRoute(route.id); setShowMap(true) }}
-                />
+                <NormalRouteCard key={route.id} route={route} active={selectedRoute === route.id} delay={0.16 + i * 0.07}
+                  onClick={() => { setSelectedRoute(route.id); setShowMap(true) }} />
               ))}
             </div>
           </section>
         </div>
 
-        {/* ── Right: Map ── */}
+        {/* Right: Map */}
         <div
           className="xl:col-span-7 rounded-2xl overflow-hidden flex flex-col"
           style={{ background: surface, border: `1px solid ${border}`, height: 560, display: showMap ? "flex" : "none", flexDirection: "column" }}
         >
-          {/* Map header */}
           <div className="px-4 sm:px-5 py-4 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${border}` }}>
             <div className="min-w-0">
               <h3 style={{ color: textOn, fontWeight: typography.semibold, fontSize: typography.base }}>Route Visualization</h3>
@@ -704,9 +887,7 @@ export function RouteSelection({ formData, onBack, onReady }) {
             {selectedRouteData && (
               <div className="flex items-center gap-2 shrink-0 ml-3">
                 {selectedRouteData.aiRecommended && (
-                  <span style={{ background: "linear-gradient(135deg,#6C63FF,#5B52D8)", color: "white", fontSize: "10px", fontWeight: 700, padding: "3px 8px", borderRadius: 6 }}>
-                    AI PICK
-                  </span>
+                  <span style={{ background: "linear-gradient(135deg,#6C63FF,#5B52D8)", color: "white", fontSize: "10px", fontWeight: 700, padding: "3px 8px", borderRadius: 6 }}>AI PICK</span>
                 )}
                 <span style={{ background: "rgba(255,255,255,0.08)", color: textSub, fontSize: "10px", fontWeight: 600, padding: "3px 8px", borderRadius: 6 }}>
                   {selectedRouteData.distance} km
@@ -715,23 +896,14 @@ export function RouteSelection({ formData, onBack, onReady }) {
             )}
           </div>
 
-          {/* Map body */}
           <div className="flex-1 min-h-0" style={{ position: "relative" }}>
             {selectedRouteData && originCoords && destCoords && (
-              <RouteMap
-                key={`${selectedRoute}-map`}
-                origin={origin}
-                destination={destination}
-                route={selectedRouteData}
-              />
+              <RouteMap key={`${selectedRoute}-map`} origin={origin} destination={destination} route={selectedRouteData} />
             )}
           </div>
 
-          {/* Map footer — real ETA */}
-          <div
-            className="px-4 sm:px-5 py-4 shrink-0 flex flex-wrap items-center justify-between gap-3"
-            style={{ borderTop: `1px solid ${border}`, background: surfaceDark }}
-          >
+          {/* Footer — price + Book button */}
+          <div className="px-4 sm:px-5 py-4 shrink-0 flex flex-wrap items-center justify-between gap-3" style={{ borderTop: `1px solid ${border}`, background: surfaceDark }}>
             <div className="flex items-center gap-6">
               <div>
                 <div style={{ color: textFade, fontSize: typography.xs, marginBottom: 3 }}>Total Cost</div>
@@ -756,104 +928,27 @@ export function RouteSelection({ formData, onBack, onReady }) {
             <motion.button
               whileHover={{ scale: booked ? 1 : 1.02 }}
               whileTap={{ scale: booked ? 1 : 0.97 }}
-              disabled={booking || booked}
-              onClick={async () => {
-                if (booking || booked) return
-                setBooking(true)
-                setBookingError("")
-                try {
-                  const result = await shipmentsApi.create({
-                    // Origin
-                    origin_company:  formData.originCompany,
-                    origin_contact:  formData.originContact,
-                    origin_phone:    formData.originPhone,
-                    origin_email:    formData.originEmail,
-                    origin_address:  formData.originAddress,
-                    origin_city:     formData.originCity,
-                    origin_state:    formData.originState,
-                    origin_zip:      formData.originZip,
-                    origin_country:  formData.originCountry,
-                    // Destination
-                    dest_company:    formData.destCompany,
-                    dest_contact:    formData.destContact,
-                    dest_phone:      formData.destPhone,
-                    dest_email:      formData.destEmail,
-                    dest_address:    formData.destAddress,
-                    dest_city:       formData.destCity,
-                    dest_state:      formData.destState,
-                    dest_zip:        formData.destZip,
-                    dest_country:    formData.destCountry,
-                    // Cargo
-                    cargo_type:      formData.cargoType,
-                    commodity:       formData.commodityDescription,
-                    hs_code:         formData.hsCode,
-                    pieces:          parseInt(formData.numberOfPieces) || 1,
-                    weight:          parseFloat(formData.totalWeight)  || 0,
-                    weight_unit:     formData.weightUnit,
-                    dimensions:      formData.dimensions,
-                    volume:          parseFloat(formData.volume) || null,
-                    volume_unit:     formData.volumeUnit,
-                    declared_value:  parseFloat(formData.declaredValue) || null,
-                    currency:        formData.currency,
-                    // Route & logistics
-                    carrier:         selectedRouteData?.carrier,
-                    service_level:   formData.serviceLevel,
-                    transport_mode:  formData.transportMode,
-                    equipment_type:  formData.equipmentType,
-                    incoterms:       formData.incoterms,
-                    special_instructions: [
-                      `Route: ${selectedRouteData?.name} via ${selectedRouteData?.carrier}`,
-                      formData.specialInstructions,
-                    ].filter(Boolean).join(" | "),
-                    insurance_required:   formData.insuranceRequired,
-                    insurance_value:  parseFloat(formData.insuranceValue) || null,
-                    po_number:       formData.poNumber,
-                    invoice_number:  formData.invoiceNumber,
-                  })
-                  // Clear caches — next shipment starts fresh
-                  try {
-                    sessionStorage.removeItem("lorri_route_cache")
-                    sessionStorage.removeItem("lorri_show_route")
-                    sessionStorage.removeItem("lorri_form_data")
-                  } catch (_) {}
-                  setTrackingNumber(result.tracking_number || "")
-                  setBooked(true)
-                  // Navigate to tracking page after 1.5s — shipment will appear there
-                  setTimeout(() => {
-                    window.location.href = "/dashboard/track"
-                  }, 1500)
-                } catch (err) {
-                  setBookingError(err.message || "Booking failed — please try again")
-                } finally {
-                  setBooking(false)
-                }
-              }}
-              className="px-6 sm:px-7 py-3 rounded-xl font-semibold transition-all"
+              disabled={booked}
+              onClick={() => !booked && setShowPayModal(true)}
+              className="px-6 sm:px-7 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
               style={{
                 background: booked ? "rgba(34,197,94,0.15)" : colors.gradientAccent,
                 color: booked ? "#4ade80" : "white",
                 border: booked ? "1px solid rgba(34,197,94,0.4)" : "none",
                 fontSize: typography.sm,
-                opacity: booking ? 0.7 : 1,
-                cursor: booking || booked ? "default" : "pointer",
+                cursor: booked ? "default" : "pointer",
               }}
             >
-              {booking
-                ? <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
-                    Booking…
-                  </span>
-                : booked
-                  ? `✓ Booked · ${trackingNumber || "Redirecting…"}`
-                  : "Book This Route"
-              }
+              {booked ? (
+                <>✓ Booked · {trackingNumber || "Redirecting…"}</>
+              ) : (
+                <>
+                  <CreditCardIcon className="w-4 h-4" />
+                  Pay & Book
+                </>
+              )}
             </motion.button>
           </div>
-          {bookingError && (
-            <div className="px-4 sm:px-5 py-2" style={{ background: "rgba(239,68,68,0.08)", borderTop: "1px solid rgba(239,68,68,0.2)" }}>
-              <p style={{ color: "#FCA5A5", fontSize: typography.xs }}>{bookingError}</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -861,7 +956,7 @@ export function RouteSelection({ formData, onBack, onReady }) {
 }
 
 // ─────────────────────────────────────────────────────────
-// Sub-components
+//  Sub-components (unchanged)
 // ─────────────────────────────────────────────────────────
 
 function AIRouteCard({ route, active, delay, onClick }) {
@@ -883,111 +978,58 @@ function AIRouteCard({ route, active, delay, onClick }) {
         transition: "all 0.25s ease",
       }}
     >
-      {/* Animated shimmer top border */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, height: 2,
-        background: `linear-gradient(90deg, transparent 0%, ${aiAccent} 30%, #A78BFA 50%, ${aiAccentEnd} 70%, transparent 100%)`,
-        opacity: active ? 1 : 0.5,
-      }} />
-
-
-
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent 0%, ${aiAccent} 30%, #A78BFA 50%, ${aiAccentEnd} 70%, transparent 100%)`, opacity: active ? 1 : 0.5 }} />
       <div className="relative p-4 sm:p-5">
-        {/* Header row — bot icon + name + price */}
         <div className="flex items-start gap-3 mb-4">
-          {/* Mini bot */}
-          <div style={{
-            width: 44, height: 44, borderRadius: "0.875rem", flexShrink: 0,
-            background: "rgba(139,92,246,0.2)",
-            border: "1px solid rgba(139,92,246,0.4)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            overflow: "hidden",
-          }}>
+          <div style={{ width: 44, height: 44, borderRadius: "0.875rem", flexShrink: 0, background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
             <Player autoplay loop src={botAnimation} style={{ width: 40, height: 40 }} />
           </div>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
               <h3 style={{ color: "#EDE9FE", fontWeight: 800, fontSize: typography.base }}>{route.name}</h3>
-              <span style={{
-                background: "linear-gradient(135deg, #7C3AED, #4F46E5)",
-                color: "white", fontSize: "9px", fontWeight: 800,
-                padding: "2px 7px", borderRadius: 20,
-                letterSpacing: "0.06em", whiteSpace: "nowrap",
-              }}>✦ AI OPTIMIZED</span>
+              <span style={{ background: "linear-gradient(135deg, #7C3AED, #4F46E5)", color: "white", fontSize: "9px", fontWeight: 800, padding: "2px 7px", borderRadius: 20, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>✦ AI OPTIMIZED</span>
             </div>
-            <div style={{ color: "rgba(196,181,253,0.65)", fontSize: typography.xs }}>
-              {route.carrier} · {route.type}
-            </div>
+            <div style={{ color: "rgba(196,181,253,0.65)", fontSize: typography.xs }}>{route.carrier} · {route.type}</div>
           </div>
-
           <div className="text-right shrink-0">
-            <div style={{ color: "#EDE9FE", fontWeight: 800, fontSize: typography.xl }}>
-              ₹{route.cost.toLocaleString("en-IN")}
-            </div>
+            <div style={{ color: "#EDE9FE", fontWeight: 800, fontSize: typography.xl }}>₹{route.cost.toLocaleString("en-IN")}</div>
             {route.savings > 0 && (
-              <div style={{
-                color: "#4ADE80", fontSize: "10px", fontWeight: 700,
-                background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)",
-                padding: "1px 7px", borderRadius: 20, marginTop: 3,
-                whiteSpace: "nowrap",
-              }}>
+              <div style={{ color: "#4ADE80", fontSize: "10px", fontWeight: 700, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)", padding: "1px 7px", borderRadius: 20, marginTop: 3, whiteSpace: "nowrap" }}>
                 ↓ {route.savingsPercent}% vs market
               </div>
             )}
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           {[
-            { label: "Transit",  val: `${route.transitDays}d`,  color: "#A78BFA" },
-            { label: "Distance", val: `${route.distance}km`,    color: "#A78BFA" },
-            { label: "On-Time",  val: `${route.onTimeRate}%`,   color: "#A78BFA" },
-            { label: "ETA",      val: route.eta,                color: "#4ADE80" },
+            { label: "Transit",  val: `${route.transitDays}d`, color: "#A78BFA" },
+            { label: "Distance", val: `${route.distance}km`,   color: "#A78BFA" },
+            { label: "On-Time",  val: `${route.onTimeRate}%`,  color: "#A78BFA" },
+            { label: "ETA",      val: route.eta,               color: "#4ADE80" },
           ].map(({ label, val, color }) => (
-            <div key={label} className="rounded-xl p-2.5 text-center" style={{
-              background: "rgba(139,92,246,0.1)",
-              border: "1px solid rgba(139,92,246,0.18)",
-            }}>
+            <div key={label} className="rounded-xl p-2.5 text-center" style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.18)" }}>
               <div style={{ color: "rgba(196,181,253,0.5)", fontSize: "8px", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
               <div style={{ color, fontWeight: 800, fontSize: label === "ETA" ? "9px" : typography.sm, lineHeight: 1.2 }}>{val}</div>
             </div>
           ))}
         </div>
 
-        {/* AI Confidence bar */}
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1.5">
             <span style={{ color: "rgba(196,181,253,0.6)", fontSize: "9px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>AI Confidence Score</span>
             <span style={{ color: "#A78BFA", fontSize: "9px", fontWeight: 800 }}>{route.onTimeRate}%</span>
           </div>
           <div style={{ height: 4, borderRadius: 4, background: "rgba(139,92,246,0.15)", overflow: "hidden" }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${route.onTimeRate}%` }}
-              transition={{ duration: 1, delay: delay + 0.3, ease: "easeOut" }}
-              style={{
-                height: "100%", borderRadius: 4,
-                background: "linear-gradient(90deg, #7C3AED, #A78BFA, #6366F1)",
-              }}
-            />
+            <motion.div initial={{ width: 0 }} animate={{ width: `${route.onTimeRate}%` }} transition={{ duration: 1, delay: delay + 0.3, ease: "easeOut" }}
+              style={{ height: "100%", borderRadius: 4, background: "linear-gradient(90deg, #7C3AED, #A78BFA, #6366F1)" }} />
           </div>
         </div>
 
-        {/* AI reasoning panel — expands on select */}
         <AnimatePresence>
           {active && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="rounded-xl p-3 mb-3" style={{
-                background: "rgba(109,40,217,0.2)",
-                border: "1px solid rgba(139,92,246,0.35)",
-              }}>
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+              <div className="rounded-xl p-3 mb-3" style={{ background: "rgba(109,40,217,0.2)", border: "1px solid rgba(139,92,246,0.35)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <Player autoplay loop src={botAnimation} style={{ width: 24, height: 24, flexShrink: 0 }} />
                   <span style={{ color: "#C4B5FD", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em" }}>WHY AI CHOSE THIS</span>
@@ -998,16 +1040,9 @@ function AIRouteCard({ route, active, delay, onClick }) {
           )}
         </AnimatePresence>
 
-        {/* Feature tags */}
         <div className="flex flex-wrap gap-1.5">
           {route.features.map((f, idx) => (
-            <span key={idx} style={{
-              background: "rgba(109,40,217,0.15)",
-              border: "1px solid rgba(139,92,246,0.25)",
-              color: "#C4B5FD",
-              fontSize: "10px", padding: "2px 9px", borderRadius: 20,
-              fontWeight: 500,
-            }}>{f}</span>
+            <span key={idx} style={{ background: "rgba(109,40,217,0.15)", border: "1px solid rgba(139,92,246,0.25)", color: "#C4B5FD", fontSize: "10px", padding: "2px 9px", borderRadius: 20, fontWeight: 500 }}>{f}</span>
           ))}
         </div>
       </div>
@@ -1023,11 +1058,7 @@ function NormalRouteCard({ route, active, delay, onClick }) {
       transition={{ delay }}
       onClick={onClick}
       className="rounded-2xl p-4 sm:p-5 cursor-pointer transition-all"
-      style={{
-        background: surface,
-        border: `2px solid ${active ? colors.accent : border}`,
-        boxShadow: active ? "0 0 0 4px rgba(0,180,216,0.12)" : "none",
-      }}
+      style={{ background: surface, border: `2px solid ${active ? colors.accent : border}`, boxShadow: active ? "0 0 0 4px rgba(0,180,216,0.12)" : "none" }}
     >
       <div className="flex items-start justify-between mb-3 gap-3">
         <div className="flex-1 min-w-0">
@@ -1041,12 +1072,7 @@ function NormalRouteCard({ route, active, delay, onClick }) {
       </div>
 
       <div className="grid grid-cols-4 gap-2 mb-3">
-        {[
-          ["Transit", `${route.transitDays}d`],
-          ["Distance", `${route.distance}km`],
-          ["On-Time", `${route.onTimeRate}%`],
-          ["ETA", route.eta],
-        ].map(([label, val]) => (
+        {[["Transit", `${route.transitDays}d`], ["Distance", `${route.distance}km`], ["On-Time", `${route.onTimeRate}%`], ["ETA", route.eta]].map(([label, val]) => (
           <div key={label}>
             <div style={{ color: textFade, fontSize: "9px", textTransform: "uppercase", letterSpacing: typography.wider, marginBottom: 2 }}>{label}</div>
             <div style={{ color: label === "ETA" ? colors.success : textOn, fontWeight: typography.semibold, fontSize: "10px" }}>{val}</div>
@@ -1066,13 +1092,9 @@ function NormalRouteCard({ route, active, delay, onClick }) {
 function BackButton({ onClick }) {
   const [hovered, setHovered] = useState(false)
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       className="flex items-center gap-2 mb-4 transition-colors"
-      style={{ color: hovered ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)", fontSize: typography.sm }}
-    >
+      style={{ color: hovered ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)", fontSize: typography.sm }}>
       <ArrowLeftIcon className="w-4 h-4" />
       Back to Shipment Details
     </button>
@@ -1081,15 +1103,8 @@ function BackButton({ onClick }) {
 
 function TabButton({ active, onClick, children }) {
   return (
-    <button
-      onClick={onClick}
-      className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
-      style={{
-        background: active ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)",
-        border: `1px solid ${active ? "rgba(255,255,255,0.2)" : border}`,
-        color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
-      }}
-    >
+    <button onClick={onClick} className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
+      style={{ background: active ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)", border: `1px solid ${active ? "rgba(255,255,255,0.2)" : border}`, color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)" }}>
       {children}
     </button>
   )

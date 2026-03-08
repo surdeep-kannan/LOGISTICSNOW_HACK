@@ -13,12 +13,13 @@ import Settings            from "./pages/Settings"
 import ROICalculator       from "./pages/ROICalculator"
 import FreightIntelligence from "./pages/FreightIntelligence"
 import Sustainability      from "./pages/Sustainability"
+import PaymentHistory      from "./pages/PaymentHistory"
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public marketing */}
+        {/* Public */}
         <Route path="/"        element={<LandingPage />} />
         <Route path="/login"   element={<Login />} />
         <Route path="/signup"  element={<SignUp />} />
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="sustainability" element={<Sustainability />}      />
           <Route path="roi"            element={<ROICalculator />}       />
           <Route path="settings"       element={<Settings />}            />
+          <Route path="payments"       element={<PaymentHistory />}      />
         </Route>
 
         {/* Catch-all */}

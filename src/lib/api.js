@@ -7,14 +7,12 @@
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:3001"
 
 // ── In-memory cache with TTL ──────────────────────────────
-// Prevents hammering the backend on every tab switch.
-// Each entry: { data, expiresAt }
 const _cache = new Map()
 
 const TTL = {
-  short:  15_000,   // 15s  — auth/me, shipment list
-  medium: 60_000,   // 60s  — port congestion, rate benchmarks
-  long:   120_000,  // 2min — alerts
+  short:  15_000,
+  medium: 60_000,
+  long:   120_000,
 }
 
 function cacheGet(key) {
@@ -30,7 +28,6 @@ function cacheSet(key, data, ttl = TTL.short) {
 
 export function cacheBust(keyOrPrefix) {
   if (!keyOrPrefix) { _cache.clear(); return }
-  // If key ends with ":" treat as prefix — delete all matching keys
   if (keyOrPrefix.endsWith(":")) {
     for (const k of _cache.keys()) {
       if (k.startsWith(keyOrPrefix)) _cache.delete(k)
@@ -40,19 +37,13 @@ export function cacheBust(keyOrPrefix) {
   }
 }
 
-// ── In-flight deduplication ───────────────────────────────
-// If two components call the same endpoint simultaneously,
-// only one real request is made — both get the same promise.
 const _inflight = new Map()
 
 async function cachedRequest(cacheKey, path, options = {}, ttl = TTL.short) {
-  // Only cache GET requests
   const isGet = !options.method || options.method === "GET"
   if (isGet) {
     const cached = cacheGet(cacheKey)
     if (cached) return cached
-
-    // Deduplicate in-flight
     if (_inflight.has(cacheKey)) return _inflight.get(cacheKey)
   }
 
@@ -123,7 +114,7 @@ export const auth = {
   logout: () => { cacheBust(); return request("/api/auth/logout", { method: "POST" }) },
 
   updateProfile: (form) => {
-    cacheBust("auth:me")   // profile changed — invalidate
+    cacheBust("auth:me")
     return request("/api/auth/profile", {
       method: "PUT",
       body: JSON.stringify(form),
@@ -146,7 +137,7 @@ export const shipments = {
   create: (body) => {
     cacheBust("shipments:list:")
     cacheBust("shipments:stats")
-    cacheBust("orders:list:")   // orders page shows shipments too
+    cacheBust("orders:list:")
     return request("/api/shipments", { method: "POST", body: JSON.stringify(body) })
   },
 
@@ -228,4 +219,22 @@ export const upload = {
     if (!res.ok) throw new Error(data.error || "Upload failed")
     return data
   },
+}
+
+// ── Payments ──────────────────────────────────────────────
+export const payments = {
+  // Called after PayPal onApprove — verifies + saves to DB + creates shipment
+  capture: (body) => {
+    cacheBust("payments:list")
+    return request("/api/payments/capture", {
+      method: "POST",
+      body: JSON.stringify(body),
+    })
+  },
+
+  // List all payments for the logged-in user
+  list: () => cachedRequest("payments:list", "/api/payments", {}, TTL.short),
+
+  // Single payment detail
+  get: (id) => cachedRequest(`payments:${id}`, `/api/payments/${id}`, {}, TTL.short),
 }
