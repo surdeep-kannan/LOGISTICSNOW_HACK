@@ -13,7 +13,7 @@ import Settings            from "./pages/Settings"
 import ROICalculator       from "./pages/ROICalculator"
 import FreightIntelligence from "./pages/FreightIntelligence"
 import Sustainability      from "./pages/Sustainability"
-import PaymentHistory      from "./pages/PaymentHistory"
+import PaymentHistory      from "./pages/Paymenthistory"
 
 export default function App() {
   return (
