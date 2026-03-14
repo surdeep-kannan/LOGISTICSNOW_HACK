@@ -16,8 +16,8 @@ const textFade = "rgba(255,255,255,0.35)"
 export default function Login() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail]       = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail]       = useState("surdeepkannan2124@gmail.com")
+  const [password, setPassword] = useState("SE:JjpMy>F+A'2?")
   const [loading, setLoading]   = useState(false)
   const [focused, setFocused]   = useState("")
   const [error, setError]       = useState("")

@@ -9,19 +9,12 @@ import {
   ExclamationTriangleIcon,
   XMarkIcon,
   ShieldCheckIcon,
-  CreditCardIcon,
 } from "@heroicons/react/24/outline"
 import { RouteMap } from "./RouteMap"
 import { colors, typography } from "../styles"
-import { ai as aiApi, payments as paymentsApi } from "../lib/api"
+import { ai as aiApi, shipments as shipmentsApi } from "../lib/api"
 import { Player } from "@lottiefiles/react-lottie-player"
 import botAnimation from "../assets/bot.json"
-
-// ── PayPal Client ID ──────────────────────────────────────
-const PAYPAL_CLIENT_ID = "AX_sQHsHHbw6u7ZVvaa3nVzyqUT_sqmzBoBS55V4y_ayfZHdtIpf4AF2AWosVfiE9AfpzYZbW2NH27bO"
-
-// INR → USD conversion (approximate, update as needed)
-const INR_TO_USD = 83.5
 
 const ROUTES_CACHE_KEY = "lorri_route_cache"
 
@@ -188,6 +181,8 @@ function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
 
   const ai1    = aiData?.routes?.[0]
   const ai2Raw = aiData?.routes?.[1]
+  const ai3    = aiData?.routes?.[2]
+
   const isDupe = ai2Raw && ai1 && (
     ai2Raw.name?.toLowerCase().trim() === ai1.name?.toLowerCase().trim() ||
     ai2Raw.carrier?.toLowerCase().trim() === ai1.carrier?.toLowerCase().trim()
@@ -209,46 +204,62 @@ function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
       id: "ai-1",
       name:          ai1?.name    || `Express ${mode === "air" ? "Air" : "Highway"} Route`,
       carrier:       ai1?.carrier || (mode === "air" ? "IndiGo Cargo" : mode === "rail" ? "CONCOR" : "VRL Logistics"),
-      type:          mode === "air" ? "Air Freight" : mode === "rail" ? "Rail Freight" : "Direct Highway",
-      transitDays:   transit.express,
-      cost:          expressCost,
-      distance:      distanceKm,
+      type:          ai1?.mode === "air" ? "Air Freight" : ai1?.mode === "rail" ? "Rail Freight" : "Direct Highway",
+      transitDays:   ai1?.transitDays  || transit.express,
+      cost:          ai1?.price        || expressCost,
+      distance:      ai1?.distanceKm   || distanceKm,
       reliability:   98,
-      onTimeRate:    ai1?.on_time_pct || 97,
-      co2:           Math.round(distanceKm * 0.18),
+      onTimeRate:    ai1?.on_time_pct  || 97,
+      co2:           ai1?.co2          || Math.round(distanceKm * 0.18),
       stops:         [originCity, destCity],
       features:      ai1?.highlights?.length > 0 ? ai1.highlights : ["Real-time tracking", "Priority handling", "24/7 support", "Insurance included"],
       aiRecommended: true,
-      savings:       marketExpressCost - expressCost,
-      savingsPercent: Math.round(((marketExpressCost - expressCost) / marketExpressCost) * 100),
-      reason:        ai1?.name
-        ? `AI selected ${ai1.name} via ${ai1.carrier} for your ${formData.cargoType} cargo (${weight}kg). Fastest available option.`
-        : `Fastest available route for ${weight}kg of ${formData.cargoType || "general"} cargo. ${transit.express} day transit over ${distanceKm}km.`,
-      eta:              calcETA(ready, transit.express),
+      savings:       ai1?.price ? Math.round(ai1.price * 0.15) : (marketExpressCost - expressCost),
+      savingsPercent: ai1?.savings_pct || Math.round(((marketExpressCost - expressCost) / marketExpressCost) * 100),
+      reason:        ai1?.pros?.join(". ") || `Fastest available route for ${weight}kg of ${formData.cargoType || "general"} cargo. ${ai1?.transitDays || transit.express} day transit over ${distanceKm}km.`,
+      eta:              calcETA(ready, ai1?.transitDays || transit.express),
       routeCoordinates: routeCoords1,
     },
     {
       id: "ai-2",
       name:          ai2?.name    || "Economy Optimized Route",
       carrier:       ai2?.carrier || (mode === "rail" ? "Indian Railways Freight" : mode === "air" ? "SpiceJet Cargo" : "TCI Freight"),
-      type:          mode === "air" ? "Air Freight" : mode === "rail" ? "Rail Freight" : "Multi-modal",
-      transitDays:   transit.standard,
-      cost:          stdCost,
-      distance:      Math.round(distanceKm * 1.06),
+      type:          ai2?.mode === "air" ? "Air Freight" : ai2?.mode === "rail" ? "Rail Freight" : "Multi-modal",
+      transitDays:   ai2?.transitDays  || transit.standard,
+      cost:          ai2?.price        || stdCost,
+      distance:      ai2?.distanceKm   || Math.round(distanceKm * 1.06),
       reliability:   95,
-      onTimeRate:    ai2?.on_time_pct || 94,
-      co2:           Math.round(distanceKm * 0.14),
+      onTimeRate:    ai2?.on_time_pct  || 94,
+      co2:           ai2?.co2          || Math.round(distanceKm * 0.14),
       stops:         [originCity, "Junction Hub", destCity],
       features:      ai2?.highlights?.length > 0 ? ai2.highlights : ["Cost-optimized", "Reliable carrier", "Live tracking", "Standard insurance"],
       aiRecommended: true,
-      savings:       marketStdCost - stdCost,
-      savingsPercent: Math.round(((marketStdCost - stdCost) / marketStdCost) * 100),
-      reason:        ai2?.name
-        ? `AI selected ${ai2.name} via ${ai2.carrier}. Best cost-to-transit balance.`
-        : `Best cost-to-transit ratio. Saves ₹${(marketStdCost - stdCost).toLocaleString("en-IN")} vs market rate.`,
-      eta:              calcETA(ready, transit.standard),
+      savings:       ai2?.price ? Math.round(ai2.price * 0.38) : (marketStdCost - stdCost),
+      savingsPercent: ai2?.savings_pct || Math.round(((marketStdCost - stdCost) / marketStdCost) * 100),
+      reason:        ai2?.pros?.join(". ") || `Best cost-to-transit ratio. Saves ₹${(marketStdCost - stdCost).toLocaleString("en-IN")} vs market rate.`,
+      eta:              calcETA(ready, ai2?.transitDays || transit.standard),
       routeCoordinates: routeCoords2,
     },
+    ...(ai3 ? [{
+      id: "ai-3",
+      name:          ai3.name    || "AI Recommended Route",
+      carrier:       ai3.carrier || "Delhivery / TCI",
+      type:          ai3.mode === "air" ? "Air Freight" : ai3.mode === "rail" ? "Rail Freight" : "Road Freight",
+      transitDays:   ai3.transitDays  || transit.standard,
+      cost:          ai3.price        || Math.round((expressCost + stdCost) / 2),
+      distance:      ai3.distanceKm   || distanceKm,
+      reliability:   97,
+      onTimeRate:    ai3.on_time_pct  || 96,
+      co2:           ai3.co2          || Math.round(distanceKm * 0.15),
+      stops:         [originCity, destCity],
+      features:      ai3.highlights?.length > 0 ? ai3.highlights : ["Best speed-cost ratio", "Live GPS tracking", "LoRRI partner carrier", "Reliable on this lane"],
+      aiRecommended: true,
+      savings:       ai3.price ? Math.round(ai3.price * 0.22) : 0,
+      savingsPercent: ai3.savings_pct || 22,
+      reason:        ai3.pros?.join(". ") || `LoRRI strategic pick — best balance of speed, cost and reliability on this lane.`,
+      eta:              calcETA(ready, ai3.transitDays || transit.standard),
+      routeCoordinates: routeCoords1,
+    }] : []),
   ]
 
   const normalRoutes = [
@@ -310,305 +321,6 @@ function buildRoutes(formData, originCoords, destCoords, distanceKm, aiData) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  PayPal Modal Component
-// ─────────────────────────────────────────────────────────
-function PayPalModal({ route, formData, onClose, onSuccess }) {
-  const ppContainerRef = useRef(null)
-  const renderedRef    = useRef(false)
-  const [ppReady,   setPpReady]   = useState(false)
-  const [ppError,   setPpError]   = useState("")
-  const [processing, setProcessing] = useState(false)
-  const [paid,      setPaid]      = useState(false)
-  const [txId,      setTxId]      = useState("")
-
-  const amountUSD = Math.max(1, (route.cost / INR_TO_USD)).toFixed(2)
-
-  // Load PayPal SDK script once
-  useEffect(() => {
-    if (document.getElementById("paypal-sdk")) { setPpReady(true); return }
-    const script = document.createElement("script")
-    script.id  = "paypal-sdk"
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`
-    script.onload  = () => setPpReady(true)
-    script.onerror = () => setPpError("Failed to load PayPal. Check your connection.")
-    document.head.appendChild(script)
-  }, [])
-
-  // Render PayPal buttons once SDK is ready
-  useEffect(() => {
-    if (!ppReady || !ppContainerRef.current || renderedRef.current) return
-    if (!window.paypal) { setPpError("PayPal SDK not available."); return }
-
-    renderedRef.current = true
-
-    window.paypal.Buttons({
-      style: {
-        layout:  "vertical",
-        color:   "gold",
-        shape:   "rect",
-        label:   "pay",
-        height:  48,
-      },
-
-      createOrder: (data, actions) => {
-        return actions.order.create({
-          purchase_units: [{
-            amount: {
-              value:         amountUSD,
-              currency_code: "USD",
-            },
-            description: `LoRRI.ai Freight - ${route.name} · ${formData.originCity} → ${formData.destCity}`,
-          }],
-          application_context: {
-            brand_name:          "LoRRI.ai",
-            shipping_preference: "NO_SHIPPING",
-          },
-        })
-      },
-
-      onApprove: async (data, actions) => {
-        setProcessing(true)
-        setPpError("")
-        try {
-          // Capture on PayPal side
-          const order = await actions.order.capture()
-
-          // Now send to our backend: verify + save payment + create shipment
-          const result = await paymentsApi.capture({
-            paypal_order_id: order.id,
-            amount_inr:      route.cost,
-            route_data: {
-              name:        route.name,
-              carrier:     route.carrier,
-              from:        `${formData.originCity}, ${formData.originState}`,
-              to:          `${formData.destCity}, ${formData.destState}`,
-              transitDays: route.transitDays,
-            },
-            shipment_data: {
-              origin_company:  formData.originCompany,
-              origin_contact:  formData.originContact,
-              origin_phone:    formData.originPhone,
-              origin_email:    formData.originEmail,
-              origin_address:  formData.originAddress,
-              origin_city:     formData.originCity,
-              origin_state:    formData.originState,
-              origin_zip:      formData.originZip,
-              origin_country:  formData.originCountry,
-              dest_company:    formData.destCompany,
-              dest_contact:    formData.destContact,
-              dest_phone:      formData.destPhone,
-              dest_email:      formData.destEmail,
-              dest_address:    formData.destAddress,
-              dest_city:       formData.destCity,
-              dest_state:      formData.destState,
-              dest_zip:        formData.destZip,
-              dest_country:    formData.destCountry,
-              cargo_type:      formData.cargoType,
-              commodity:       formData.commodityDescription,
-              hs_code:         formData.hsCode,
-              pieces:          parseInt(formData.numberOfPieces) || 1,
-              weight:          parseFloat(formData.totalWeight)  || 0,
-              weight_unit:     formData.weightUnit,
-              dimensions:      formData.dimensions,
-              volume:          parseFloat(formData.volume) || null,
-              volume_unit:     formData.volumeUnit,
-              declared_value:  parseFloat(formData.declaredValue) || null,
-              currency:        formData.currency,
-              carrier:         route.carrier,
-              service_level:   formData.serviceLevel,
-              transport_mode:  formData.transportMode,
-              equipment_type:  formData.equipmentType,
-              incoterms:       formData.incoterms,
-              special_instructions: [
-                `Route: ${route.name} via ${route.carrier}`,
-                formData.specialInstructions,
-              ].filter(Boolean).join(" | "),
-              insurance_required: formData.insuranceRequired,
-              insurance_value:    parseFloat(formData.insuranceValue) || null,
-              po_number:          formData.poNumber,
-              invoice_number:     formData.invoiceNumber,
-            },
-          })
-
-          // Clear session caches
-          try {
-            sessionStorage.removeItem("lorri_route_cache")
-            sessionStorage.removeItem("lorri_show_route")
-            sessionStorage.removeItem("lorri_form_data")
-          } catch (_) {}
-
-          setTxId(result.tracking_number || order.id)
-          setPaid(true)
-          setTimeout(() => onSuccess(result.tracking_number), 1800)
-
-        } catch (err) {
-          const msg = (err.message || "").toLowerCase()
-          // "Window closed" = sandbox popup closed before response — treat as success
-          if (msg.includes("window closed") || msg.includes("popup closed") || msg.includes("closed before")) {
-            const fakeTracking = `LRR-${Date.now().toString(36).toUpperCase()}`
-            setTxId(fakeTracking)
-            setPaid(true)
-            setTimeout(() => onSuccess(fakeTracking), 1800)
-          } else {
-            setPpError(err.message || "Payment processing failed. Please try again.")
-            setProcessing(false)
-          }
-        }
-      },
-
-      onError: (err) => {
-        console.error("PayPal error:", err)
-        const msg = (err?.message || "").toLowerCase()
-        if (msg.includes("window closed") || msg.includes("popup closed") || msg.includes("closed before")) {
-          const fakeTracking = `LRR-${Date.now().toString(36).toUpperCase()}`
-          setTxId(fakeTracking)
-          setPaid(true)
-          setTimeout(() => onSuccess(fakeTracking), 1800)
-        } else {
-          // Only show error for real failures, not sandbox popup issues
-          setPpError("PayPal encountered an error. Please try again.")
-          setProcessing(false)
-        }
-      },
-
-      onCancel: () => {
-        // Silently close — don't show "payment cancelled" to user
-        // They can just click Pay & Book again
-      },
-    }).render(ppContainerRef.current)
-
-  }, [ppReady]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 flex items-center justify-center p-4"
-        style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 99999 }}
-        onClick={(e) => { if (e.target === e.currentTarget && !processing) onClose() }}
-      >
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className="w-full max-w-md rounded-2xl overflow-hidden"
-          style={{ background: "#13104A", border: "1px solid rgba(255,255,255,0.12)" }}
-        >
-          {/* Header */}
-          <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#1A1756" }}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0077B6,#00B4D8)" }}>
-                <CreditCardIcon className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div style={{ color: textOn, fontWeight: 700, fontSize: typography.base }}>Complete Payment</div>
-                <div style={{ color: textFade, fontSize: typography.xs }}>Secure checkout via PayPal</div>
-              </div>
-            </div>
-            {!processing && !paid && (
-              <button onClick={onClose} className="rounded-lg p-1.5 transition-colors" style={{ color: textFade }} onMouseEnter={e => e.currentTarget.style.color = textOn} onMouseLeave={e => e.currentTarget.style.color = textFade}>
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-
-          {/* Order summary */}
-          <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex-1 min-w-0">
-                  <div style={{ color: textOn, fontWeight: 700, fontSize: typography.sm, marginBottom: 2 }}>{route.name}</div>
-                  <div style={{ color: textFade, fontSize: typography.xs }}>{route.carrier} · {route.transitDays} day{route.transitDays !== 1 ? "s" : ""} transit</div>
-                </div>
-                {route.aiRecommended && (
-                  <span style={{ background: "linear-gradient(135deg,#7C3AED,#4F46E5)", color: "white", fontSize: "9px", fontWeight: 800, padding: "2px 8px", borderRadius: 20, flexShrink: 0 }}>✦ AI PICK</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 mb-3" style={{ color: textFade, fontSize: typography.xs }}>
-                <MapPinIcon className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{formData.originCity}, {formData.originState} → {formData.destCity}, {formData.destState}</span>
-              </div>
-
-              {/* Price breakdown */}
-              <div className="space-y-1.5 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                <div className="flex justify-between">
-                  <span style={{ color: textFade, fontSize: typography.xs }}>Freight cost</span>
-                  <span style={{ color: textSub, fontSize: typography.xs }}>₹{route.cost.toLocaleString("en-IN")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span style={{ color: textFade, fontSize: typography.xs }}>Charged in USD</span>
-                  <span style={{ color: textSub, fontSize: typography.xs }}>${amountUSD}</span>
-                </div>
-                <div className="flex justify-between pt-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                  <span style={{ color: textOn, fontWeight: 700, fontSize: typography.sm }}>Total</span>
-                  <div className="text-right">
-                    <div style={{ color: colors.accent, fontWeight: 800, fontSize: typography.lg }}>₹{route.cost.toLocaleString("en-IN")}</div>
-                    <div style={{ color: textFade, fontSize: "10px" }}>≈ ${amountUSD} USD</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* PayPal button area */}
-          <div className="px-6 py-5">
-            {paid ? (
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="rounded-xl p-5 text-center"
-                style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)" }}
-              >
-                <div className="text-4xl mb-3">✅</div>
-                <div style={{ color: "#4ADE80", fontWeight: 800, fontSize: typography.base, marginBottom: 4 }}>Payment Successful!</div>
-                <div style={{ color: textSub, fontSize: typography.xs, marginBottom: 8 }}>Shipment booked · Redirecting to tracking…</div>
-                {txId && <div style={{ color: textFade, fontSize: "10px", fontFamily: "monospace" }}>Ref: {txId}</div>}
-              </motion.div>
-            ) : processing ? (
-              <div className="rounded-xl p-5 text-center" style={{ background: "rgba(0,180,216,0.08)", border: "1px solid rgba(0,180,216,0.2)" }}>
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />
-                  <span style={{ color: colors.accent, fontWeight: 600, fontSize: typography.sm }}>Processing payment…</span>
-                </div>
-                <div style={{ color: textFade, fontSize: typography.xs }}>Please wait, do not close this window</div>
-              </div>
-            ) : (
-              <>
-                {!ppReady && !ppError && (
-                  <div className="flex items-center justify-center gap-2 py-4">
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                    <span style={{ color: textFade, fontSize: typography.xs }}>Loading PayPal…</span>
-                  </div>
-                )}
-                {ppError && (
-                  <div className="rounded-lg p-3 mb-3 flex items-start gap-2" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" }}>
-                    <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#FCA5A5" }} />
-                    <p style={{ color: "#FCA5A5", fontSize: typography.xs }}>{ppError}</p>
-                  </div>
-                )}
-                <div ref={ppContainerRef} className="min-h-[50px]" />
-              </>
-            )}
-
-            {/* Security note */}
-            {!paid && !processing && (
-              <div className="flex items-center justify-center gap-1.5 mt-4">
-                <ShieldCheckIcon className="w-3.5 h-3.5" style={{ color: textFade }} />
-                <span style={{ color: textFade, fontSize: "10px" }}>256-bit SSL · Secured by PayPal</span>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  )
-}
-
-// ─────────────────────────────────────────────────────────
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────
 export function RouteSelection({ formData, onBack, onReady }) {
@@ -623,12 +335,81 @@ export function RouteSelection({ formData, onBack, onReady }) {
   const [destCoords,    setDestCoords]    = useState(null)
   const [distanceKm,    setDistanceKm]    = useState(null)
 
-  // Payment modal state
-  const [showPayModal,  setShowPayModal]  = useState(false)
+  // Booking state
+  const [isBooking,     setIsBooking]     = useState(false)
   const [booked,        setBooked]        = useState(false)
   const [trackingNumber, setTrackingNumber] = useState("")
 
   const fetchedRef = useRef(false)
+
+  const handleBook = async () => {
+    if (!selectedRouteData || isBooking || booked) return
+    setIsBooking(true)
+    setError("")
+
+    try {
+      const payload = {
+        origin_company:  formData.originCompany,
+        origin_contact:  formData.originContact,
+        origin_phone:    formData.originPhone,
+        origin_email:    formData.originEmail,
+        origin_address:  formData.originAddress,
+        origin_city:     formData.originCity,
+        origin_state:    formData.originState,
+        origin_zip:      formData.originZip,
+        origin_country:  formData.originCountry,
+        dest_company:    formData.destCompany,
+        dest_contact:    formData.destContact,
+        dest_phone:      formData.destPhone,
+        dest_email:      formData.destEmail,
+        dest_address:    formData.destAddress,
+        dest_city:       formData.destCity,
+        dest_state:      formData.destState,
+        dest_zip:        formData.destZip,
+        dest_country:    formData.destCountry,
+        cargo_type:      formData.cargoType,
+        commodity:       formData.commodityDescription,
+        hs_code:         formData.hsCode,
+        pieces:          parseInt(formData.numberOfPieces) || 1,
+        weight:          parseFloat(formData.totalWeight)  || 0,
+        weight_unit:     formData.weightUnit,
+        dimensions:      formData.dimensions,
+        volume:          parseFloat(formData.volume) || null,
+        volume_unit:     formData.volumeUnit,
+        declared_value:  parseFloat(formData.declaredValue) || null,
+        currency:        formData.currency,
+        carrier:         selectedRouteData.carrier,
+        service_level:   formData.serviceLevel,
+        transport_mode:  formData.transportMode,
+        equipment_type:  formData.equipmentType,
+        incoterms:       formData.incoterms,
+        special_instructions: [
+          `Route: ${selectedRouteData.name} via ${selectedRouteData.carrier}`,
+          formData.specialInstructions,
+        ].filter(Boolean).join(" | "),
+        insurance_required: formData.insuranceRequired,
+        insurance_value:    parseFloat(formData.insuranceValue) || null,
+        po_number:          formData.poNumber,
+        invoice_number:     formData.invoiceNumber,
+      }
+
+      const res = await shipmentsApi.create(payload)
+
+      // Clear caches
+      try {
+        sessionStorage.removeItem("lorri_route_cache")
+        sessionStorage.removeItem("lorri_show_route")
+        sessionStorage.removeItem("lorri_form_data")
+      } catch (_) {}
+
+      setTrackingNumber(res.tracking_number || res.shipment?.tracking_number)
+      setBooked(true)
+      setTimeout(() => { window.location.href = "/dashboard/track" }, 1500)
+    } catch (err) {
+      setError(err.message || "Failed to book shipment. Please try again.")
+      setIsBooking(false)
+    }
+  }
 
   useEffect(() => {
     if (fetchedRef.current) return
@@ -679,20 +460,45 @@ export function RouteSelection({ formData, onBack, onReady }) {
         setDistanceKm(km)
 
         let aiData = null
+        let finalOc = oc
+        let finalDc = dc
+        let finalKm = km
+
         try {
           aiData = await aiApi.route({
-            origin:         `${formData.originCity}, ${formData.originState}`,
-            destination:    `${formData.destCity}, ${formData.destState}`,
-            cargo_type:     formData.cargoType || "general",
-            weight:         formData.totalWeight || "1000",
-            transport_mode: formData.transportMode || "road",
-            priority:       formData.serviceLevel === "economy" ? "cost" : formData.serviceLevel === "express" ? "speed" : "balanced",
+            origin_address: formData.originAddress  || null,
+            origin_city:    formData.originCity,
+            origin_state:   formData.originState    || null,
+            origin_zip:     formData.originZip      || null,
+            dest_address:   formData.destAddress    || null,
+            dest_city:      formData.destCity,
+            dest_state:     formData.destState      || null,
+            dest_zip:       formData.destZip        || null,
+            cargo_type:     formData.cargoType      || "general",
+            weight:         formData.totalWeight    || "1000",
+            transport_mode: formData.transportMode  || "road",
+            priority:       formData.serviceLevel === "economy" ? "cost"
+                          : formData.serviceLevel === "express" ? "speed"
+                          : "balanced",
           })
+
+          if (aiData?.route_context?.origin_lat && aiData?.route_context?.origin_lng) {
+            finalOc = { lat: aiData.route_context.origin_lat, lng: aiData.route_context.origin_lng }
+            setOriginCoords(finalOc)
+          }
+          if (aiData?.route_context?.dest_lat && aiData?.route_context?.dest_lng) {
+            finalDc = { lat: aiData.route_context.dest_lat, lng: aiData.route_context.dest_lng }
+            setDestCoords(finalDc)
+          }
+          if (aiData?.route_context?.distance_km) {
+            finalKm = aiData.route_context.distance_km
+            setDistanceKm(finalKm)
+          }
         } catch (aiErr) {
           console.warn("AI route fetch failed:", aiErr.message)
         }
 
-        const { aiRoutes: ar, normalRoutes: nr } = buildRoutes(formData, oc, dc, km, aiData)
+        const { aiRoutes: ar, normalRoutes: nr } = buildRoutes(formData, finalOc, finalDc, finalKm, aiData)
         setAiRoutes(ar)
         setNormalRoutes(nr)
 
@@ -702,9 +508,9 @@ export function RouteSelection({ formData, onBack, onReady }) {
             destCity:      formData.destCity,
             transportMode: formData.transportMode,
             date:          new Date().toISOString().split("T")[0],
-            originCoords:  oc,
-            destCoords:    dc,
-            distanceKm:    km,
+            originCoords:  finalOc,
+            destCoords:    finalDc,
+            distanceKm:    finalKm,
             aiRoutes:      ar,
             normalRoutes:  nr,
           }))
@@ -732,12 +538,18 @@ export function RouteSelection({ formData, onBack, onReady }) {
   const allRoutes         = [...aiRoutes, ...normalRoutes]
   const selectedRouteData = allRoutes.find(r => r.id === selectedRoute)
 
+  // Use full address as name so map popup shows the actual address, not just city
+  const originName = [formData.originAddress, formData.originCity, formData.originState]
+    .filter(Boolean).join(", ") || formData.originCity
+  const destName = [formData.destAddress, formData.destCity, formData.destState]
+    .filter(Boolean).join(", ") || formData.destCity
+
   const origin      = originCoords
-    ? { ...originCoords, name: `${formData.originCity}, ${formData.originState}` }
-    : { lat: 19.076, lng: 72.877, name: formData.originCity }
+    ? { ...originCoords, name: originName }
+    : { lat: 19.076, lng: 72.877, name: originName }
   const destination = destCoords
-    ? { ...destCoords, name: `${formData.destCity}, ${formData.destState}` }
-    : { lat: 13.082, lng: 80.270, name: formData.destCity }
+    ? { ...destCoords, name: destName }
+    : { lat: 13.082, lng: 80.270, name: destName }
 
   if (loading) {
     return (
@@ -780,20 +592,24 @@ export function RouteSelection({ formData, onBack, onReady }) {
 
   return (
     <div className="w-full">
-      {/* PayPal Modal */}
-      {showPayModal && selectedRouteData && (
-        <PayPalModal
-          route={selectedRouteData}
-          formData={formData}
-          onClose={() => setShowPayModal(false)}
-          onSuccess={(trackingNo) => {
-            setShowPayModal(false)
-            setTrackingNumber(trackingNo || "")
-            setBooked(true)
-            setTimeout(() => { window.location.href = "/dashboard/track" }, 1000)
-          }}
-        />
-      )}
+      {/* Booking Overlay */}
+      <AnimatePresence>
+        {isBooking && !booked && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 99999 }}
+          >
+            <div className="rounded-xl p-6 text-center" style={{ background: "#13104A", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
+                <span style={{ color: textOn, fontWeight: 600, fontSize: typography.base }}>Booking Shipment…</span>
+              </div>
+              <p style={{ color: textFade, fontSize: typography.xs }}>Confirming carrier and route details.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <div className="mb-5">
@@ -945,26 +761,25 @@ export function RouteSelection({ formData, onBack, onReady }) {
             </div>
 
             <motion.button
-              whileHover={{ scale: booked ? 1 : 1.02 }}
-              whileTap={{ scale: booked ? 1 : 0.97 }}
-              disabled={booked}
-              onClick={() => !booked && setShowPayModal(true)}
+              whileHover={{ scale: booked || isBooking ? 1 : 1.02 }}
+              whileTap={{ scale: booked || isBooking ? 1 : 0.97 }}
+              disabled={booked || isBooking}
+              onClick={handleBook}
               className="px-6 sm:px-7 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
               style={{
                 background: booked ? "rgba(34,197,94,0.15)" : colors.gradientAccent,
                 color: booked ? "#4ade80" : "white",
                 border: booked ? "1px solid rgba(34,197,94,0.4)" : "none",
                 fontSize: typography.sm,
-                cursor: booked ? "default" : "pointer",
+                cursor: booked || isBooking ? "default" : "pointer",
               }}
             >
               {booked ? (
                 <>✓ Booked · {trackingNumber || "Redirecting…"}</>
+              ) : isBooking ? (
+                <>Booking…</>
               ) : (
-                <>
-                  <CreditCardIcon className="w-4 h-4" />
-                  Pay & Book
-                </>
+                <>Book Route</>
               )}
             </motion.button>
           </div>

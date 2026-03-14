@@ -613,6 +613,20 @@ export default function CreateShipment() {
   }
 }, [])// eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Clear stale route cache from previous deployment ──────────
+  // Problem: sessionStorage may contain routes with old (Delhi) coordinates
+  // from before the geocoding fix. This hook clears that stale cache on mount.
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem("lorri_route_cache")
+      sessionStorage.removeItem("lorri_show_route")
+      sessionStorage.removeItem("lorri_ai_loading")
+      console.log("✓ Cleared stale route cache — will fetch fresh data")
+    } catch (err) {
+      // Silently fail if sessionStorage access denied
+    }
+  }, [])
+
   const set = (key, val) => setFormData(prev => {
     const next = { ...prev, [key]: val }
     try { sessionStorage.setItem("lorri_form_data", JSON.stringify(next)) } catch {}

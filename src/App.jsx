@@ -16,7 +16,7 @@ import Dashboard from "./pages/Dashboard"
 import CreateShipment from "./pages/CreateShipment"
 import TrackShipment from "./pages/TrackShipment"
 import OrderHistory from "./pages/OrderHistory"
-import PaymentHistory from "./pages/PaymentHistory"
+import AgentArchitecture from "./pages/AgentArchitecture"
 import Settings from "./pages/Settings"
 import ROICalculator from "./pages/ROICalculator"
 import FreightIntelligence from "./pages/FreightIntelligence"
@@ -39,7 +39,7 @@ export default function App() {
           <Route path="create" element={<CreateShipment />} />
           <Route path="track" element={<TrackShipment />} />
           <Route path="orders" element={<OrderHistory />} />
-          <Route path="payments" element={<PaymentHistory />} />
+          <Route path="architecture" element={<AgentArchitecture />} />
           <Route path="settings" element={<Settings />} />
           <Route path="roi" element={<ROICalculator />} />
           <Route path="intelligence" element={<FreightIntelligence />} />
