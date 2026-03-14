@@ -61,10 +61,11 @@ const PROCESS = [
 ]
 
 const TESTIMONIALS = [
-  { quote: "LoRRI cut our freight procurement from 3 days to 4 hours. The AI recommendations alone saved ₹2.3Cr in Q1.", name: "Priya Menon", role: "VP Logistics, Tata Steel", init: "PM" },
-  { quote: "First platform that actually understands Indian freight complexity. District-level intelligence is unmatched.", name: "Arjun Kapoor", role: "Supply Chain Head, Reliance", init: "AK" },
-  { quote: "Our Scope 3 compliance went from a nightmare to fully automated. ESG reporting alone justifies the cost.", name: "Sunita Rao", role: "CFO, Mahindra Logistics", init: "SR" },
+  { quote: "LoRRI cut our freight procurement from 3 days to 4 hours. The AI recommendations alone saved ₹2.3Cr in Q1.", name: "Priya Menon", role: "VP Logistics, Kiran Freight Solutions", init: "PM" },
+  { quote: "First platform that actually understands Indian freight complexity. District-level intelligence is unmatched.", name: "Arjun Kapoor", role: "Supply Chain Head, NovaMoves India", init: "AK" },
+  { quote: "Our Scope 3 compliance went from a nightmare to fully automated. ESG reporting alone justifies the cost.", name: "Sunita Rao", role: "CFO, Vridhi Cargo Pvt. Ltd.", init: "SR" },
 ]
+
 
 // ── 4 Agents data (mirrors AgentArchitecture.jsx) ─────────
 const AGENTS_LP = [
