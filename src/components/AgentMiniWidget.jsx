@@ -69,7 +69,6 @@ export default function AgentMiniWidget() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: colors.success, animation: "agent-pulse 1.5s ease-in-out infinite" }} />
               <span style={{ color: colors.success, fontSize: 9, fontWeight: 800, letterSpacing: "0.1em" }}>ALL ACTIVE</span>
             </div>
-            {/* Hormuz crisis badge */}
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full"
               style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)" }}>
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#EF4444", animation: "agent-pulse 1s ease-in-out infinite" }} />
@@ -87,9 +86,10 @@ export default function AgentMiniWidget() {
           onMouseEnter={e => e.currentTarget.style.background = "rgba(139,92,246,0.22)"}
           onMouseLeave={e => e.currentTarget.style.background = "rgba(139,92,246,0.12)"}
         >
-          Full Architecture →
+          AI Brain Explorer →
         </button>
       </div>
+
 
       <div className="p-5">
         {/* 4 agent nodes */}

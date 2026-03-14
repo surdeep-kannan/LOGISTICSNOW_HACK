@@ -138,9 +138,9 @@ export default function Dashboard() {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 style={{ color: textOn, fontSize: typography["3xl"], fontWeight: typography.bold, letterSpacing: typography.tight, marginBottom: 6 }}>
-            Dashboard Overview
+            Logistics Alpha Dashboard
           </h1>
-          <p style={{ color: textSub, fontSize: typography.base }}>Monitor your freight operations in real-time</p>
+          <p style={{ color: textSub, fontSize: typography.base }}>Real-time autonomous intelligence & operation pulse</p>
         </div>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => navigate("/dashboard/create")}
