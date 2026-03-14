@@ -596,7 +596,38 @@ export default function LandingPage() {
       <style>{`
         @keyframes lp-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
         @keyframes lp-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes ticker-scroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
       `}</style>
+
+      {/* ── TOP LIVE TICKER (AI PULSE) ── */}
+      <div style={{ background: "#0D0A25", borderBottom: `1px solid ${C.border}`, padding: "8px 0", overflow: "hidden", position: "relative", zIndex: 50 }}>
+        <div style={{ display: "flex", whiteSpace: "nowrap", gap: 50, animation: "ticker-scroll 40s linear infinite" }}>
+          {[
+            { tag: "LIVE", text: "Optimization Engine rerouted 12 container ships near Suez to avoid 4hr weather delay" },
+            { tag: "SAVING", text: "Global Grid just identified 18% lower spot rate for Shanghai → Mumbai corridor" },
+            { tag: "INTEL", text: "68,200 freight lanes benchmarked in real-time · System Health: 100%" },
+            { tag: "SUSTAIN", text: "AI reduced carbon footprint of 400 shipments by 14.2% through modal shift" },
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 9, fontWeight: 900, padding: "2px 6px", borderRadius: 4, background: item.tag === "LIVE" ? "rgba(34,197,94,0.15)" : "rgba(0,180,216,0.15)", color: item.tag === "LIVE" ? C.success : C.accent, border: `1px solid ${item.tag === "LIVE" ? C.success : C.accent}40` }}>{item.tag}</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{item.text}</span>
+            </div>
+          ))}
+          {/* Repeat for seamless scroll */}
+          {[
+            { tag: "LIVE", text: "Optimization Engine rerouted 12 container ships near Suez to avoid 4hr weather delay" },
+            { tag: "SAVING", text: "Global Grid just identified 18% lower spot rate for Shanghai → Mumbai corridor" },
+          ].map((item, i) => (
+            <div key={i+"-rep"} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 9, fontWeight: 900, padding: "2px 6px", borderRadius: 4, background: item.tag === "LIVE" ? "rgba(34,197,94,0.15)" : "rgba(0,180,216,0.15)", color: item.tag === "LIVE" ? C.success : C.accent, border: `1px solid ${item.tag === "LIVE" ? C.success : C.accent}40` }}>{item.tag}</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{item.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <Navbar onLogin={onLogin} onSignup={onSignup} onDemo={onDemo} />
       <Ticker />
