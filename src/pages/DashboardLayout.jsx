@@ -28,7 +28,7 @@ const navItems = [
   { label: "Freight Intel",   Icon: GlobeAltIcon,              path: "/dashboard/intelligence"   },
   { label: "Sustainability",  Icon: CpuChipIcon,               path: "/dashboard/sustainability" },
   { label: "ROI Calculator",  Icon: CalculatorIcon,            path: "/dashboard/roi"            },
-  { label: "Agent Architecture", Icon: ServerIcon,             path: "/dashboard/architecture"   },
+  { label: "AI CORE (Brain)", Icon: ServerIcon,             path: "/dashboard/architecture"   },
   { label: "Settings",        Icon: Cog6ToothIcon,             path: "/dashboard/settings"       },
 ]
 

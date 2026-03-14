@@ -126,7 +126,7 @@ function Ticker() {
   }, [])
   const item = TICKER_ITEMS[idx]
   return (
-    <div style={{ marginTop: 64, background: "rgba(0,0,0,0.15)", borderBottom: `1px solid ${C.border}`, padding: "8px 32px", display: "flex", alignItems: "center", gap: 14 }}>
+    <div style={{ background: "rgba(0,0,0,0.15)", borderBottom: `1px solid ${C.border}`, padding: "8px 32px", display: "flex", alignItems: "center", gap: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.success, display: "block", animation: "lp-pulse 1.5s ease-in-out infinite" }} />
         <span style={{ color: C.success, fontSize: 9, fontWeight: 800, letterSpacing: "0.16em" }}>LIVE</span>
@@ -603,8 +603,9 @@ export default function LandingPage() {
       `}</style>
 
       {/* ── TOP LIVE TICKER (AI PULSE) ── */}
-      <div style={{ background: "#0D0A25", borderBottom: `1px solid ${C.border}`, padding: "8px 0", overflow: "hidden", position: "relative", zIndex: 50 }}>
+      <div style={{ background: "#0D0A25", borderBottom: `1px solid ${C.border}`, padding: "8px 0", overflow: "hidden", position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: "34px" }}>
         <div style={{ display: "flex", whiteSpace: "nowrap", gap: 50, animation: "ticker-scroll 40s linear infinite" }}>
+
           {[
             { tag: "LIVE", text: "Optimization Engine rerouted 12 container ships near Suez to avoid 4hr weather delay" },
             { tag: "SAVING", text: "Global Grid just identified 18% lower spot rate for Shanghai → Mumbai corridor" },
@@ -629,7 +630,10 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <Navbar onLogin={onLogin} onSignup={onSignup} onDemo={onDemo} />
+      <div style={{ marginTop: "34px" }}>
+        <Navbar onLogin={onLogin} onSignup={onSignup} onDemo={onDemo} />
+      </div>
+
       <Ticker />
 
       {/* ── HERO ── */}

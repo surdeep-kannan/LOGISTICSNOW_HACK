@@ -23,15 +23,18 @@ const textSub    = "rgba(255,255,255,0.65)"
 
 // ── Mock fallback data — shown when DB is empty ───────────
 const MOCK_STATS = {
-  active_shipments: 14, in_transit: 9, avg_transit_days: 3,
-  monthly_spend: 42500000, delivered: 87, delayed: 2, pending: 3,
+  active_shipments: 42, in_transit: 31, avg_transit_days: 2.8,
+  monthly_spend: 85000000, delivered: 1240, delayed: 1, pending: 4,
+  carbon_mitigated: 14.8, ai_savings_month: 1240000,
 }
+
 const MOCK_SHIPMENTS = [
-  { id: "1", tracking_number: "SHP-2026-089", origin_city: "Mumbai",  origin_state: "MH", dest_city: "Delhi",     dest_state: "DL", status: "in_transit", carrier: "Delhivery",    eta: "2026-03-18" },
-  { id: "2", tracking_number: "SHP-2026-082", origin_city: "JNPT",    origin_state: "MH", dest_city: "Singapore", dest_state: "",   status: "in_transit", carrier: "Maersk Line",  eta: "2026-03-22" },
-  { id: "3", tracking_number: "SHP-2026-076", origin_city: "Delhi",   origin_state: "DL", dest_city: "Bangalore", dest_state: "KA", status: "delivered",  carrier: "Blue Dart",    eta: "2026-03-14" },
-  { id: "4", tracking_number: "SHP-2026-071", origin_city: "Chennai", origin_state: "TN", dest_city: "Pune",      dest_state: "MH", status: "delayed",    carrier: "VRL Logistics",eta: "2026-03-16" },
+  { id: "1", tracking_number: "SHP-AI-992", origin_city: "Mumbai",  origin_state: "MH", dest_city: "Singapore", dest_state: "",   status: "in_transit", carrier: "NovaSea Lines", eta: "2026-03-22" },
+  { id: "2", tracking_number: "SHP-RD-441", origin_city: "Delhi",   origin_state: "DL", dest_city: "Mumbai",    dest_state: "MH", status: "in_transit", carrier: "SwiftMove",   eta: "2026-03-18" },
+  { id: "3", tracking_number: "SHP-AR-005", origin_city: "Blr",     origin_state: "KA", dest_city: "Dubai",     dest_state: "",   status: "pending",    carrier: "SkyBridge",   eta: "2026-03-16" },
+  { id: "4", tracking_number: "SHP-RL-112", origin_city: "Chennai", origin_state: "TN", dest_city: "Kolkata",   dest_state: "WB", status: "delivered",  carrier: "IndoRail",    eta: "2026-03-14" },
 ]
+
 const MOCK_ALERTS = [
   { id: "1", type: "warning", message: "SHP-2026-082 rerouted — Hormuz strait congestion. New ETA Mar 22.", created_at: new Date(Date.now() - 1800000).toISOString() },
   { id: "2", type: "success", message: "SHP-2026-076 delivered to Bangalore 4hr ahead of schedule.",         created_at: new Date(Date.now() - 7200000).toISOString() },
@@ -121,11 +124,12 @@ export default function Dashboard() {
   }, [])
 
   const kpi = [
-    { name: "Active Shipments", value: stats?.active_shipments ?? MOCK_STATS.active_shipments, change: "+3",  trend: "up",   img: cargoImg, color: colors.accent,  bg: "rgba(0,180,216,0.12)",  bdr: "rgba(0,180,216,0.2)",  large: true  },
-    { name: "In Transit",       value: stats?.in_transit       ?? MOCK_STATS.in_transit,       change: "+1",  trend: "up",   img: truckImg, color: "#A5B4FC",      bg: "rgba(165,180,252,0.1)", bdr: "rgba(165,180,252,0.2)",large: true  },
-    { name: "Avg. Transit Time",value: `${stats?.avg_transit_days ?? MOCK_STATS.avg_transit_days}d`, change: "-0.5d", trend: "up", img: clockImg, color: colors.warning, bg: "rgba(245,158,11,0.1)", bdr: "rgba(245,158,11,0.2)", large: false },
-    { name: "Monthly Spend",    value: (() => { const v = stats?.monthly_spend ?? MOCK_STATS.monthly_spend; return `₹${(v/10000000).toFixed(2)}Cr` })(), change: "-4%", trend: "down", img: rupeeImg, color: colors.success, bg: "rgba(34,197,94,0.1)", bdr: "rgba(34,197,94,0.2)", large: false },
+    { name: "Active Shipments", value: stats?.active_shipments ?? MOCK_STATS.active_shipments, change: "+12", trend: "up",   img: cargoImg, color: colors.accent,  bg: "rgba(0,180,216,0.12)",  bdr: "rgba(0,180,216,0.2)",  large: true  },
+    { name: "Monthly Spend",    value: (() => { const v = stats?.monthly_spend ?? MOCK_STATS.monthly_spend; return `₹${(v/10000000).toFixed(2)}Cr` })(), change: "-4%", trend: "down", img: rupeeImg, color: colors.success, bg: "rgba(34,197,94,0.1)", bdr: "rgba(34,197,94,0.2)", large: true },
+    { name: "Carbon Mitigation",value: `${stats?.carbon_mitigated ?? MOCK_STATS.carbon_mitigated}t`, change: "+2.1t", trend: "up", img: clockImg, color: "#22C55E", bg: "rgba(34,197,94,0.1)", bdr: "rgba(34,197,94,0.2)", large: false },
+    { name: "AI Alpha Saving",  value: `₹${((stats?.ai_savings_month ?? MOCK_STATS.ai_savings_month)/100000).toFixed(1)}L`, change: "+₹1.2L", trend: "up", img: rupeeImg, color: "#A5B4FC", bg: "rgba(165,180,252,0.1)", bdr: "rgba(165,180,252,0.2)", large: false },
   ]
+
 
   return (
     <div className="space-y-7 max-w-7xl mx-auto">
