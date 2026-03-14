@@ -19,44 +19,146 @@ const textFade   = "rgba(255,255,255,0.35)"
 const inputBg    = "rgba(255,255,255,0.06)"
 
 // ─────────────────────────────────────────────────────────
-//  DEMO shipment — "Ship at Sea / Customs" showcase
-//  Shown in quick chips; fallback when no real shipment found
+//  DEMO shipments — one per transport mode / state
 // ─────────────────────────────────────────────────────────
-const SEA_DEMO = {
-  id:            "DEMO-SEA-001",
-  status:        "At Sea",
-  statusColor:   "blue",
-  route:         "JNPT Mumbai → Singapore",
-  carrier:       "Maersk Line",
-  eta:           "Mar 22, 2026",
-  transportMode: "sea",
-  shipmentState: "ship-moving",   // renders ship_moving.png on map
-  vehicle:       "MSC LEANDRA",
-  completedKm:   2100,
-  remainingKm:   2200,
-  origin:      { lat: 18.9322, lng: 72.8375, name: "JNPT Mumbai" },
-  current:     { lat: 6.5,    lng: 87.2,    name: "Indian Ocean" },
-  destination: { lat: 1.2966,  lng: 103.852, name: "Singapore Port" },
-  ports: [
-    { lat: 8.0883, lng: 77.5385, name: "Tuticorin" },
-  ],
-  timeline: [
-    { label: "Order Confirmed",   sub: "JNPT Mumbai · Mar 10, 09:00 AM",  status: "done"    },
-    { label: "Loaded at Port",    sub: "JNPT Mumbai · Mar 11, 14:00",     status: "done"    },
-    { label: "Vessel Departed",   sub: "JNPT Mumbai · Mar 12, 06:00",     status: "done"    },
-    { label: "At Sea",            sub: "Indian Ocean · Current",           status: "active"  },
-    { label: "Singapore Customs", sub: "Est. Mar 20",                      status: "pending" },
-    { label: "Delivered",         sub: "Singapore Port · Est. Mar 22",    status: "pending" },
-  ],
-  cargo: [
-    { label: "Container ID",   value: "MSCU-4421890"      },
-    { label: "Weight",         value: "22,000 kg"         },
-    { label: "Commodity",      value: "Industrial Machinery" },
-    { label: "Bill of Lading", value: "BL-2024-0054"      },
-    { label: "Vessel",         value: "MSC LEANDRA"       },
-    { label: "Equipment",      value: "40ft HC Container" },
-  ],
+const DEMO_SHIPMENTS = {
+  "DEMO-SEA-001": {
+    id:            "DEMO-SEA-001",
+    status:        "At Sea",
+    statusColor:   "blue",
+    route:         "JNPT Mumbai → Singapore",
+    carrier:       "Maersk Line",
+    eta:           "Mar 22, 2026",
+    transportMode: "sea",
+    shipmentState: "ship-moving",
+    vehicle:       "MSC LEANDRA",
+    completedKm:   2100,
+    remainingKm:   2200,
+    origin:      { lat: 18.932, lng: 72.837, name: "JNPT Mumbai" },
+    current:     { lat: 6.5,   lng: 87.2,   name: "Indian Ocean" },
+    destination: { lat: 1.296, lng: 103.852, name: "Singapore Port" },
+    ports: [{ lat: 8.088, lng: 77.538, name: "Tuticorin" }],
+    timeline: [
+      { label: "Order Confirmed",   sub: "JNPT Mumbai · Mar 10, 09:00 AM",  status: "done"    },
+      { label: "Loaded at Port",    sub: "JNPT Mumbai · Mar 11, 14:00",     status: "done"    },
+      { label: "Vessel Departed",   sub: "JNPT Mumbai · Mar 12, 06:00",     status: "done"    },
+      { label: "At Sea",            sub: "Indian Ocean · Current",           status: "active"  },
+      { label: "Singapore Customs", sub: "Est. Mar 20",                      status: "pending" },
+      { label: "Delivered",         sub: "Singapore Port · Est. Mar 22",     status: "pending" },
+    ],
+    cargo: [
+      { label: "Container ID",   value: "MSCU-4421890"       },
+      { label: "Weight",         value: "22,000 kg"          },
+      { label: "Commodity",      value: "Industrial Machinery"},
+      { label: "Bill of Lading", value: "BL-2024-0054"       },
+      { label: "Vessel",         value: "MSC LEANDRA"        },
+      { label: "Equipment",      value: "40ft HC Container"  },
+    ],
+  },
+  "DEMO-RD-002": {
+    id:            "DEMO-RD-002",
+    status:        "In Transit",
+    statusColor:   "cyan",
+    route:         "Delhi → Mumbai",
+    carrier:       "Blue Dart Express",
+    eta:           "Mar 15, 2026",
+    transportMode: "road",
+    shipmentState: "truck-moving",
+    vehicle:       "HR-38-AK-4421",
+    completedKm:   820,
+    remainingKm:   560,
+    origin:      { lat: 28.613, lng: 77.209, name: "Delhi ICD" },
+    current:     { lat: 23.022, lng: 72.571, name: "Ahmedabad Hub" },
+    destination: { lat: 19.076, lng: 72.877, name: "Mumbai Warehouse" },
+    ports: [{ lat: 25.594, lng: 85.137, name: "Bhopal Checkpoint" }],
+    timeline: [
+      { label: "Order Booked",  sub: "Delhi ICD · Mar 12, 08:00",     status: "done"    },
+      { label: "Picked Up",     sub: "Delhi Warehouse · Mar 12, 11:00",status: "done"    },
+      { label: "Delhi Depot",   sub: "Departed · Mar 12, 23:00",       status: "done"    },
+      { label: "Ahmedabad Hub", sub: "En route · Current",             status: "active"  },
+      { label: "Mumbai APMC",   sub: "Est. Mar 15, 06:00",             status: "pending" },
+      { label: "Delivered",     sub: "Mumbai Warehouse · Est. Mar 15", status: "pending" },
+    ],
+    cargo: [
+      { label: "Tracking No",  value: "DEMO-RD-002"         },
+      { label: "Weight",       value: "4,200 kg"            },
+      { label: "Commodity",    value: "Auto Components"     },
+      { label: "Carrier",      value: "Blue Dart Express"   },
+      { label: "Equipment",    value: "20ft Container Truck"},
+      { label: "Incoterms",    value: "DAP"                 },
+    ],
+  },
+  "DEMO-AIR-003": {
+    id:            "DEMO-AIR-003",
+    status:        "At Customs",
+    statusColor:   "purple",
+    route:         "Bangalore → Dubai Intl",
+    carrier:       "Air India Cargo",
+    eta:           "Mar 14, 2026",
+    transportMode: "air",
+    shipmentState: "customs",
+    vehicle:       "AI-1401",
+    completedKm:   2420,
+    remainingKm:   80,
+    origin:      { lat: 12.972, lng: 77.595, name: "Bangalore KEA" },
+    current:     { lat: 25.010, lng: 55.060, name: "Dubai Customs" },
+    destination: { lat: 25.205, lng: 55.271, name: "Dubai World Central" },
+    ports: [],
+    timeline: [
+      { label: "Booking Confirmed", sub: "Bangalore KEA · Mar 12, 15:00", status: "done"    },
+      { label: "Cargo Acceptance",  sub: "BLR Airport · Mar 13, 06:00",   status: "done"    },
+      { label: "Flight Departed",   sub: "AI-1401 · Mar 13, 22:45",        status: "done"    },
+      { label: "Landed Dubai",      sub: "DWC Airport · Mar 14, 01:30",    status: "done"    },
+      { label: "Customs Clearance", sub: "In Progress · Current",          status: "active"  },
+      { label: "Delivered",         sub: "Dubai Warehouse · Est. Mar 14",  status: "pending" },
+    ],
+    cargo: [
+      { label: "AWB No",      value: "AI-4421890-03"      },
+      { label: "Weight",      value: "680 kg"             },
+      { label: "Commodity",   value: "Pharmaceutical"     },
+      { label: "Carrier",     value: "Air India Cargo"    },
+      { label: "Equipment",   value: "ULD Container"      },
+      { label: "Incoterms",   value: "CIF"                },
+    ],
+  },
+  "DEMO-DONE-004": {
+    id:            "DEMO-DONE-004",
+    status:        "Delivered",
+    statusColor:   "green",
+    route:         "Chennai → Kolkata",
+    carrier:       "CONCOR Rail",
+    eta:           "Delivered",
+    transportMode: "rail",
+    shipmentState: "loaded-complete",
+    vehicle:       "CONCOR-BOXX-12",
+    completedKm:   1680,
+    remainingKm:   0,
+    origin:      { lat: 13.082, lng: 80.270, name: "Chennai Rail ICD" },
+    current:     { lat: 22.572, lng: 88.363, name: "Kolkata Dankuni" },
+    destination: { lat: 22.572, lng: 88.363, name: "Kolkata Dankuni ICD" },
+    ports: [{ lat: 17.686, lng: 83.218, name: "Visakhapatnam" }],
+    timeline: [
+      { label: "Order Placed",     sub: "Chennai ICD · Mar 6, 09:00",      status: "done" },
+      { label: "Loaded on Rake",   sub: "Chennai Rail · Mar 7, 04:00",      status: "done" },
+      { label: "Departed Chennai", sub: "Mar 7, 06:00",                     status: "done" },
+      { label: "Visakhapatnam",    sub: "Transit stop · Mar 8, 14:00",      status: "done" },
+      { label: "Arrived Kolkata",  sub: "Dankuni ICD · Mar 10, 11:30",      status: "done" },
+      { label: "Delivered",        sub: "Kolkata Dankuni · Mar 10, 15:00",  status: "done" },
+    ],
+    cargo: [
+      { label: "Tracking No",  value: "DEMO-DONE-004"          },
+      { label: "Weight",       value: "38,500 kg"              },
+      { label: "Commodity",    value: "Steel Coils"            },
+      { label: "Carrier",      value: "CONCOR Rail"            },
+      { label: "Equipment",    value: "BOXX Wagon × 4"         },
+      { label: "Incoterms",    value: "EXW"                    },
+    ],
+  },
 }
+
+const SEA_DEMO = DEMO_SHIPMENTS["DEMO-SEA-001"]
+const ALL_DEMO_IDS = Object.keys(DEMO_SHIPMENTS)
+
 
 // ─────────────────────────────────────────────────────────
 //  Status metadata
@@ -254,21 +356,19 @@ export default function TrackShipment() {
   const [loadingShipment, setLoadingShipment]  = useState(false)
   const [shipmentError,   setShipmentError]    = useState("")
 
-  // Real recent IDs + demo pinned at end
-  const [recentIds, setRecentIds] = useState([SEA_DEMO.id])
+  const [recentIds, setRecentIds] = useState(ALL_DEMO_IDS)
 
   // Load recent shipments for quick chips
   useEffect(() => {
-    shipmentsApi.list({ limit: 6 })
+    shipmentsApi.list({ limit: 4 })
       .then(data => {
         const ids = (data.shipments || [])
           .map(s => s.tracking_number)
           .filter(Boolean)
-          .slice(0, 5)
-        // Always append the sea demo chip at the end
-        setRecentIds([...ids, SEA_DEMO.id])
+          .slice(0, 4)
+        setRecentIds([...ids, ...ALL_DEMO_IDS])
       })
-      .catch(() => setRecentIds([SEA_DEMO.id]))
+      .catch(() => setRecentIds(ALL_DEMO_IDS))
   }, [])
 
   // Load shipment when URL param changes
@@ -281,9 +381,9 @@ export default function TrackShipment() {
     setShipment(null)
     setShipmentError("")
 
-    // Immediately resolve demo shipment without hitting API
-    if (id === SEA_DEMO.id) {
-      setShipment(SEA_DEMO)
+    // Immediately resolve any demo shipment without hitting API
+    if (DEMO_SHIPMENTS[id]) {
+      setShipment(DEMO_SHIPMENTS[id])
       return
     }
 
@@ -363,15 +463,18 @@ export default function TrackShipment() {
           <span style={{ color: textFade, fontSize: typography.xs, fontWeight: typography.medium, letterSpacing: typography.wider, textTransform: "uppercase" }}>
             Recent:
           </span>
-          {recentIds.map(id => (
-            <QuickChip
-              key={id}
-              id={id}
-              isDemo={id === SEA_DEMO.id}
-              active={trackingInput === id}
-              onClick={() => { setTrackingInput(id); setSearchParams({ id }) }}
-            />
-          ))}
+          {recentIds.map(id => {
+            const demo = DEMO_SHIPMENTS[id]
+            return (
+              <QuickChip
+                key={id}
+                id={id}
+                demoData={demo}
+                active={trackingInput === id}
+                onClick={() => { setTrackingInput(id); setSearchParams({ id }) }}
+              />
+            )
+          })}
         </div>
       </div>
 
@@ -595,8 +698,13 @@ export default function TrackShipment() {
 // ─────────────────────────────────────────────────────────
 //  Quick chip
 // ─────────────────────────────────────────────────────────
-function QuickChip({ id, active, isDemo, onClick }) {
+const MODE_TAGS = { sea:"SEA", road:"ROAD", air:"AIR", rail:"RAIL" }
+const MODE_COLORS = { sea:"#60A5FA", road:"#00B4D8", air:"#F59E0B", rail:"#22C55E" }
+
+function QuickChip({ id, active, demoData, onClick }) {
   const [hovered, setHovered] = useState(false)
+  const modeColor = demoData ? (MODE_COLORS[demoData.transportMode] || "#A78BFA") : null
+  const modeTag   = demoData ? (MODE_TAGS[demoData.transportMode]   || "DEMO")    : null
   return (
     <button
       onClick={onClick}
@@ -612,12 +720,12 @@ function QuickChip({ id, active, isDemo, onClick }) {
         fontWeight: typography.medium,
       }}
     >
-      {isDemo && (
-        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#60A5FA", display: "inline-block", flexShrink: 0 }} />
+      {modeColor && (
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: modeColor, display: "inline-block", flexShrink: 0 }} />
       )}
       {id}
-      {isDemo && (
-        <span style={{ fontSize: "9px", color: "#60A5FA", fontFamily: "inherit", fontWeight: 700, letterSpacing: "0.04em" }}>SEA</span>
+      {modeTag && (
+        <span style={{ fontSize: "9px", color: modeColor, fontFamily: "inherit", fontWeight: 700, letterSpacing: "0.04em" }}>{modeTag}</span>
       )}
     </button>
   )

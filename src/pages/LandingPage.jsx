@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import Lottie from "lottie-react"
@@ -8,6 +8,7 @@ import containerTruck from "../assets/container-truck.png"
 import truckMove from "../assets/truck_move.png"
 import shipMoving from "../assets/ship_moving.png"
 import cargoImg from "../assets/cargo.png"
+const FreightGrid = lazy(() => import("./FreightGrid"))
 
 // ── Design tokens ─────────────────────────────────────────
 const C = {
@@ -795,7 +796,56 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── GLOBAL FREIGHT GRID ── */}
+      <section id="grid" style={{ padding: "72px 20px", background: "rgba(0,0,0,0.18)", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            style={{ textAlign: "center", marginBottom: 40 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 14px", borderRadius: 999, background: "rgba(0,180,216,0.1)", border: "1px solid rgba(0,180,216,0.3)", color: C.accent, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 18 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.success, display: "inline-block", animation: "lp-pulse 1.5s infinite" }} />
+              LIVE GLOBAL FREIGHT GRID
+            </div>
+            <h2 style={{ fontSize: "clamp(26px, 3.5vw, 42px)", fontWeight: 800, letterSpacing: "-0.025em", color: C.textHi, marginBottom: 14 }}>
+              Every freight lane.{" "}
+              <span style={{ background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                Tracked in real-time.
+              </span>
+            </h2>
+            <p style={{ color: C.textMid, fontSize: 15, maxWidth: 520, margin: "0 auto" }}>
+              68,200+ global routes benchmarked live. Click any hub to explore freight lanes, congestion data, and LoRRI rate savings across India, China, USA, and Europe.
+            </p>
+          </motion.div>
+
+          {/* Embedded Map */}
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            style={{ borderRadius: 20, overflow: "hidden", border: `1px solid ${C.borderUp}`, boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}>
+            <Suspense fallback={
+              <div style={{ height: 680, background: "#2D2566", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
+                <div style={{ width: 28, height: 28, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: C.accent, borderRadius: "50%", animation: "lp-pulse 0.75s linear infinite" }} />
+                <span style={{ color: C.textLow, fontSize: 13 }}>Loading global freight grid…</span>
+              </div>
+            }>
+            <FreightGrid embedded={true} embeddedHeight="680px" />
+            </Suspense>
+          </motion.div>
+
+          {/* CTA below map */}
+          <div style={{ textAlign: "center", marginTop: 28 }}>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              onClick={() => window.open("/grid", "_blank")}
+              style={{ padding: "12px 28px", borderRadius: 10, background: C.grad, color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 20px ${C.accentGlow}` }}>
+              Explore Full Grid →
+            </motion.button>
+            <p style={{ color: C.textLow, fontSize: 12, marginTop: 12 }}>
+              Full-screen interactive map with 68,200+ routes, live congestion & rate benchmarks
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── PRICING (NEW) ── */}
+
       <PricingSection onSignup={onSignup} />
 
       {/* ── CTA ── */}

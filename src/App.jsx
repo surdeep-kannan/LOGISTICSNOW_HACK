@@ -21,6 +21,7 @@ import Settings from "./pages/Settings"
 import ROICalculator from "./pages/ROICalculator"
 import FreightIntelligence from "./pages/FreightIntelligence"
 import Sustainability from "./pages/Sustainability"
+import FreightGrid from "./pages/FreightGrid"
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/loading" element={<LoadingScreen />} />
+        <Route path="/grid" element={<FreightGrid />} />
 
         {/* Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
@@ -44,6 +46,7 @@ export default function App() {
           <Route path="roi" element={<ROICalculator />} />
           <Route path="intelligence" element={<FreightIntelligence />} />
           <Route path="sustainability" element={<Sustainability />} />
+          <Route path="grid" element={<FreightGrid />} />
         </Route>
 
         {/* Fallback */}

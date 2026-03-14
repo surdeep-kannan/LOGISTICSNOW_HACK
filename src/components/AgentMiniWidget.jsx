@@ -81,7 +81,7 @@ export default function AgentMiniWidget() {
           </p>
         </div>
         <button
-          onClick={() => navigate("/dashboard/agents")}
+          onClick={() => navigate("/dashboard/architecture")}
           className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
           style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)", color: "#A78BFA" }}
           onMouseEnter={e => e.currentTarget.style.background = "rgba(139,92,246,0.22)"}
@@ -107,7 +107,7 @@ export default function AgentMiniWidget() {
                   boxShadow: isActive ? `0 0 16px ${agent.color}20` : "none",
                   transition: "all 0.3s",
                 }}
-                onClick={() => navigate("/dashboard/agents")}
+                onClick={() => navigate("/dashboard/architecture")}
               >
                 {/* Agent image */}
                 <div className="flex items-center justify-center mb-2 mx-auto"
