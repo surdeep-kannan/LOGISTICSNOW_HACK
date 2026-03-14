@@ -165,7 +165,7 @@ function Navbar({ onLogin, onSignup, onDemo }) {
     <>
       <motion.nav initial={{ y: -52, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45 }}
         style={{
-          position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, height: 64,
+          position: "fixed", top: "34px", left: 0, right: 0, zIndex: 200, height: 64,
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 24px",
           background: "rgba(57, 49, 133, 0.4)",
@@ -630,14 +630,15 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <div style={{ marginTop: "34px" }}>
-        <Navbar onLogin={onLogin} onSignup={onSignup} onDemo={onDemo} />
-      </div>
+      <Navbar onLogin={onLogin} onSignup={onSignup} onDemo={onDemo} />
+
+      {/* Spacer for fixed headers (34px ticker + 64px navbar) */}
+      <div style={{ height: 98 }} />
 
       <Ticker />
 
       {/* ── HERO ── */}
-      <section style={{ paddingTop: 96, paddingBottom: 60, paddingLeft: 20, paddingRight: 20 }}>
+      <section style={{ paddingTop: 60, paddingBottom: 60, paddingLeft: 20, paddingRight: 20 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 40, flexWrap: "wrap", justifyContent: "space-between" }}>
           <div style={{ flex: "1 1 400px", minWidth: 280 }}>
             <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
