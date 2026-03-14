@@ -62,10 +62,11 @@ function Skeleton({ h = 12, rounded = "xl" }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const [stats,   setStats]   = useState(null)
-  const [recent,  setRecent]  = useState([])
-  const [alerts,  setAlerts]  = useState([])
+  const [stats,   setStats]   = useState(MOCK_STATS)
+  const [recent,  setRecent]  = useState(MOCK_SHIPMENTS)
+  const [alerts,  setAlerts]  = useState(MOCK_ALERTS)
   const [loading, setLoading] = useState(true)
+
   const [error,   setError]   = useState("")
 
   useEffect(() => {

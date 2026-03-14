@@ -57,8 +57,9 @@ function Skeleton() {
 
 export default function Sustainability() {
   const [tab,      setTab]      = useState("emissions")
-  const [shipments, setShipments] = useState([])
+  const [shipments, setShipments] = useState(MOCK_EMISSIONS)
   const [loading,  setLoading]  = useState(true)
+
   const [error,    setError]    = useState("")
 
   useEffect(() => {

@@ -44,21 +44,27 @@ const textFade   = "rgba(255,255,255,0.35)"
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
-const FREIGHT_SAVING_PCT  = 0.08   // 8% — ARC Advisory conservative benchmark
-const LABOUR_AUTOMATION   = 0.35   // 35% — Gartner / Capgemini midpoint
-const DELAY_REDUCTION_PCT = 0.50   // 50% — conservative AI optimisation benefit
-const AVG_DELAY_COST_INR  = 7500   // ₹7,500 per delayed shipment (India avg)
+// 1. FREIGHT COST SAVING — 5% (extremely conservative) to 12% (optimised)
+const FREIGHT_SAVING_MIN   = 0.04   // 4% floor
+const FREIGHT_SAVING_MAX   = 0.09   // 9% conservative ceiling
+const LABOUR_AUTOMATION   = 0.30   // 30% — Gartner / Capgemini floor
+const DELAY_REDUCTION_PCT = 0.40   // 40% — conservative benefit
+const AVG_DELAY_COST_INR  = 7500   // ₹7,500 per delayed shipment
 const HOURLY_LABOUR_INR   = 400    // ₹400/hr blended ops staff
 
-// LoRRI monthly subscription cost — tiered by team size
-// Realistic SaaS pricing for Indian market
-function lorriMonthly(teamSize) {
-  if (teamSize <= 2)  return 20000
-  if (teamSize <= 5)  return 32000
-  if (teamSize <= 10) return 50000
-  if (teamSize <= 20) return 65000
-  return 80000
+// LoRRI monthly subscription cost — calibrated for scale
+function lorriMonthly(teamSize, monthlySpend) {
+  // Base cost scaled by company size (spend)
+  const spendFactor = Math.floor(monthlySpend / 1000000) * 2000 // ₹2k more per 10L spend
+  let base = 25000
+  if (teamSize <= 2)  base = 25000
+  else if (teamSize <= 5)  base = 45000
+  else if (teamSize <= 10) base = 75000
+  else if (teamSize <= 20) base = 120000
+  else base = 180000
+  return base + spendFactor
 }
+
 
 // ─── Helpers ─────────────────────────────────────────────
 const fmtINR = (n) =>
@@ -126,19 +132,22 @@ export default function ROICalculator() {
   const r = useMemo(() => {
     const annualSpend = monthlySpend * 12
 
-    // 1. Freight cost saving — 8% of annual spend
-    const freightSaving = annualSpend * FREIGHT_SAVING_PCT
+    // 1. Freight cost saving — sliding scale based on spend maturity
+    // Larger spends typically have some optimisation, so potential % is lower but absolute is higher
+    const savingPct = monthlySpend > 10000000 ? FREIGHT_SAVING_MIN : FREIGHT_SAVING_MAX
+    const freightSaving = annualSpend * savingPct
 
-    // 2. Labour saving — 35% of manual hours × blended hourly rate
+    // 2. Labour saving
     const labourSaving = manualHours * teamSize * 12 * HOURLY_LABOUR_INR * LABOUR_AUTOMATION
 
-    // 3. Delay cost saving — (delayed shipments × avg delay cost) × 50% reduction
+    // 3. Delay cost saving
     const delayedPerMonth = shipmentsPerMonth * ((100 - currentOntime) / 100)
     const delaySaving = delayedPerMonth * AVG_DELAY_COST_INR * DELAY_REDUCTION_PCT * 12
 
-    const totalSaving     = freightSaving + labourSaving + delaySaving
-    const lorriAnnual     = lorriMonthly(teamSize) * 12
+    const totalSaving     = (freightSaving + labourSaving + delaySaving) * 0.85 // 15% Safety margin
+    const lorriAnnual     = lorriMonthly(teamSize, monthlySpend) * 12
     const netGain         = totalSaving - lorriAnnual
+
 
     // ROI = (Net annual gain ÷ LoRRI cost) × 100
     // This is the standard financial ROI formula
