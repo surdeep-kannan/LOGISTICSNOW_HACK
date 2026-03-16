@@ -9,16 +9,16 @@ import assistantImg from "../assets/assistant.png"
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:3001"
 
 const C = {
-  surface:    "#1A1756",
-  surfaceMid: "#231F6B",
-  surfaceHi:  "#2D2880",
-  border:     "rgba(255,255,255,0.1)",
-  textOn:     "rgba(255,255,255,0.95)",
-  textSub:    "rgba(255,255,255,0.6)",
-  textFade:   "rgba(255,255,255,0.3)",
-  purple:     "#6C63FF",
+  surface:    "rgba(26, 23, 86, 0.7)",
+  surfaceMid: "rgba(35, 31, 107, 0.5)",
+  surfaceHi:  "rgba(45, 40, 128, 0.8)",
+  border:     "rgba(255, 255, 255, 0.08)",
+  textOn:     "rgba(255, 255, 255, 0.95)",
+  textSub:    "rgba(255, 255, 255, 0.6)",
+  textFade:   "rgba(255, 255, 255, 0.3)",
+  purple:     "#8B5CF6",
   cyan:       "#00B4D8",
-  grad:       "linear-gradient(135deg, #6C63FF 0%, #00B4D8 100%)",
+  grad:       "linear-gradient(135deg, #8B5CF6 0%, #00B4D8 100%)",
 }
 
 const SUGGESTED = [
@@ -220,37 +220,48 @@ export default function AIChat() {
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
             style={{
               position: "fixed", bottom: 96, right: 28, zIndex: 1099,
-              width: 360, height: 520,
-              borderRadius: 20, overflow: "hidden",
-              background: C.surface, border: `1px solid ${C.border}`,
-              boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+              width: 380, height: 560,
+              borderRadius: 28, overflow: "hidden",
+              background: "rgba(26, 23, 86, 0.4)", 
+              backdropFilter: "blur(24px) saturate(160%)",
+              border: `1.5px solid ${C.border}`,
+              boxShadow: "0 24px 80px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.02)",
               display: "flex", flexDirection: "column",
             }}
           >
             {/* Header */}
             <div style={{
-              padding: "14px 16px", borderBottom: `1px solid ${C.border}`,
-              background: C.surfaceMid, display: "flex", alignItems: "center",
-              gap: 10, flexShrink: 0,
+              padding: "16px 20px", borderBottom: `1px solid ${C.border}`,
+              background: "rgba(255,255,255,0.03)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center",
+              gap: 12, flexShrink: 0, position: "relative"
             }}>
+              {/* Scanline overlay for header */}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(rgba(139,92,246,0.05) 50%, transparent 50%)", backgroundSize: "100% 4px", opacity: 0.2, pointerEvents: "none" }} />
+              
               <div style={{
-                width: 42, height: 42, borderRadius: "50%",
-                overflow: "hidden",
+                width: 44, height: 44, borderRadius: 14,
+                overflow: "hidden", border: `1.5px solid ${C.cyan}40`,
+                boxShadow: `0 0 15px ${C.cyan}20`
               }}><img src={assistantImg} alt="LoRRI" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>
+              
               <div style={{ flex: 1 }}>
-                <div style={{ color: C.textOn, fontWeight: 700, fontSize: 14 }}>
-                  LoRRI AI Assistant
+                <div style={{ color: C.textOn, fontWeight: 900, fontSize: 13, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+                  LoRRI Neural Link
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
-                  <span style={{ color: "#22C55E", fontSize: 11 }}>Online · Powered by Gemini</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
+                  <motion.span 
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 8px #22C55E" }} 
+                  />
+                  <span style={{ color: "#22C55E", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em" }}>OPERATIONAL · v4.2 Alpha</span>
                 </div>
               </div>
               <button onClick={clearChat}
-                style={{ color: C.textFade, background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: "4px 8px", borderRadius: 6 }}
-                onMouseEnter={e => e.target.style.color = C.textSub}
-                onMouseLeave={e => e.target.style.color = C.textFade}>
-                Clear
+                style={{ color: C.textFade, background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, cursor: "pointer", fontSize: 10, fontWeight: 800, padding: "5px 10px", borderRadius: 8, transition: "all 0.2s" }}
+                onMouseEnter={e => { e.target.style.color = C.textOn; e.target.style.background = "rgba(255,255,255,0.1)" }}
+                onMouseLeave={e => { e.target.style.color = C.textFade; e.target.style.background = "rgba(255,255,255,0.05)" }}>
+                RESET
               </button>
             </div>
 

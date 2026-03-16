@@ -3,7 +3,7 @@ import Globe from 'react-globe.gl';
 
 const STATUS_COLOR = { normal: '#22C55E', moderate: '#F59E0B', high: '#EF4444' };
 
-export default function FreightGlobe({ hubs = [], lanes = [], activeHub, setActiveHub, filterMode = 'all' }) {
+export default function FreightGlobe({ hubs = [], lanes = [], activeHub, setActiveHub, filterMode = 'all', simplified = false }) {
   const globeRef = useRef();
   const boxRef   = useRef();
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -28,9 +28,10 @@ export default function FreightGlobe({ hubs = [], lanes = [], activeHub, setActi
     const g = globeRef.current;
     if (!g) return;
     const ctrl = g.controls();
-    ctrl.autoRotate      = false;
-    ctrl.enablePan       = false;
-    ctrl.enableZoom      = true;
+    ctrl.autoRotate      = !simplified;
+    ctrl.autoRotateSpeed = 0.8;
+    ctrl.enablePan       = !simplified;
+    ctrl.enableZoom      = !simplified;
     ctrl.minDistance     = 150;
     ctrl.maxDistance     = 600;
   }, []);

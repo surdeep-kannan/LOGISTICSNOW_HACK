@@ -391,45 +391,47 @@ function AgentSection({ onDemo }) {
           {/* Right: live active agent detail */}
           <AnimatePresence mode="wait">
             <motion.div key={active.id}
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.35 }}
               style={{
-                borderRadius: 20, overflow: "hidden",
+                borderRadius: 28, overflow: "hidden",
                 background: C.surface,
-                border: `1px solid ${active.color}40`,
-                boxShadow: `0 0 48px ${active.color}18`,
+                border: `1.5px solid ${active.color}35`,
+                boxShadow: `0 20px 50px rgba(0,0,0,0.3), 0 0 30px ${active.color}12`,
+                position: "relative"
               }}>
-              {/* Header */}
+              {/* Refined Detail Header */}
               <div style={{
-                padding: "22px 24px",
-                background: `linear-gradient(135deg, ${active.color}15 0%, transparent 70%)`,
-                borderBottom: `1px solid ${C.border}`,
+                padding: "24px 24px",
+                background: `linear-gradient(135deg, ${active.color}20 0%, transparent 60%)`,
+                borderBottom: `1px solid rgba(255,255,255,0.06)`,
                 display: "flex", alignItems: "center", gap: 16,
               }}>
                 <div style={{
-                  width: 60, height: 60, borderRadius: 16, flexShrink: 0,
+                  width: 64, height: 64, borderRadius: 20, flexShrink: 0,
                   background: active.tagBg, border: `1px solid ${active.tagBdr}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: `0 8px 24px rgba(0,0,0,0.2)`
                 }}>
                   <img src={active.img} alt={active.name}
                     style={{
-                      width: 42, height: 42, objectFit: "contain",
+                      width: 44, height: 44, objectFit: "contain",
                       filter: `drop-shadow(0 0 8px ${active.color})`
                     }} />
                 </div>
                 <div>
-                  <div style={{ color: C.textHi, fontWeight: 800, fontSize: 17, marginBottom: 6 }}>{active.name}</div>
+                  <div style={{ color: C.textHi, fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em", marginBottom: 6 }}>{active.name}</div>
                   <div style={{
                     display: "flex", alignItems: "center", gap: 6,
-                    padding: "3px 10px", borderRadius: 6, width: "fit-content",
-                    background: active.tagBg, border: `1px solid ${active.tagBdr}`,
-                    color: active.color, fontSize: 10, fontWeight: 800, letterSpacing: "0.1em"
+                    padding: "3px 10px", borderRadius: 8, width: "fit-content",
+                    background: `${active.color}15`, border: `1px solid ${active.color}30`,
+                    color: active.color, fontSize: 9, fontWeight: 900, letterSpacing: "0.15em"
                   }}>
                     <span style={{
                       width: 6, height: 6, borderRadius: "50%", background: active.color,
-                      animation: "lp-pulse 1.5s infinite"
+                      boxShadow: `0 0 6px ${active.color}`
                     }} />
-                    AGENT ACTIVE
+                    NEURAL AGENT ACTIVE
                   </div>
                 </div>
               </div>
@@ -853,16 +855,34 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          {/* Embedded Map — Scaled height for mobile */}
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-            style={{ borderRadius: 20, overflow: "hidden", border: `1px solid ${C.borderUp}`, boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}>
+          {/* Interactive Globe Thumbnail (Frozen for Performance) */}
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            whileHover={{ scale: 1.01 }} transition={{ duration: 0.6 }}
+            style={{ 
+              borderRadius: 24, overflow: "hidden", 
+              border: `1.5px solid ${C.borderUp}`, 
+              boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+              position: "relative", background: "#2D2566" 
+            }}>
             <Suspense fallback={
-              <div style={{ height: "clamp(400px, 60vh, 680px)", background: "#2D2566", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ height: "clamp(400px, 60vh, 600px)", background: "#2D2566", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: C.accent, borderRadius: "50%", animation: "lp-pulse 0.75s linear infinite" }} />
               </div>
             }>
-            <FreightGrid embedded={true} embeddedHeight="clamp(450px, 70vh, 680px)" />
+              <FreightGrid embedded={true} embeddedHeight="clamp(400px, 65vh, 620px)" simplified={true} />
             </Suspense>
+
+            {/* Shield Overlay to capture clicks and prevent scrolling interference */}
+            <div 
+              onClick={() => window.open("/grid", "_blank")}
+              style={{ position: "absolute", inset: 0, cursor: "pointer", zIndex: 10, background: "rgba(0,0,0,0)" }} 
+            />
+            
+            {/* Interactive Hint */}
+            <div style={{ position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8, alignItems: "center", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)", padding: "10px 20px", borderRadius: 99, border: `1px solid ${C.borderUp}`, zIndex: 11, pointerEvents: "none" }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.success, animation: "lp-pulse 1.5s infinite" }} />
+              <span style={{ color: C.textHi, fontSize: 13, fontWeight: 700 }}>Click to Launch Live Interactive Grid</span>
+            </div>
           </motion.div>
 
           {/* CTA below map */}

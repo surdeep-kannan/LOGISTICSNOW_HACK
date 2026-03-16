@@ -210,7 +210,7 @@ function laneTooltipHTML(lane, f, t) {
   </div>`
 }
 
-export default function FreightGrid({ embedded = false, embeddedHeight = "520px" }) {
+export default function FreightGrid({ embedded = false, embeddedHeight = "520px", simplified = false }) {
   const [activeHub,    setActiveHub]   = useState(null)
   const [tab,          setTab]         = useState("hubs")
   const [search,       setSearch]      = useState("")
@@ -286,15 +286,21 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
         .lane-row-s:hover{background:${surfaceMid}!important}
         @media (max-width: 768px) {
           .lorri-sidebar {
-            position: absolute !important;
+            position: fixed !important;
             right: 0;
             top: 0;
             bottom: 0;
-            width: 85% !important;
-            max-width: 320px;
-            height: 100%;
-            z-index: 100 !important;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            width: 100% !important;
+            height: 100vh;
+            z-index: 200 !important;
+            background: rgba(15, 12, 51, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+          }
+          .lorri-globe-container {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute !important;
+            top: 0; left: 0;
           }
         }
       `}</style>
@@ -383,6 +389,7 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
             activeHub={activeHub}
             setActiveHub={handleSetActiveHub}
             filterMode={filterMode}
+            simplified={simplified}
           />
         </div>
 
@@ -535,9 +542,9 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
         </AnimatePresence>
       </div>
 
-      {/* Floating hub connections card — shown when sidebar is closed */}
+      {/* Floating hub connections card — shown when sidebar is closed, only on larger screens */}
       <AnimatePresence>
-        {activeHub && !sidebarOpen && (
+        {activeHub && !sidebarOpen && window.innerWidth > 640 && (
           <motion.div initial={{ opacity:0, y:14, scale:.97 }} animate={{ opacity:1, y:0, scale:1 }} exit={{ opacity:0, y:10 }}
             style={{ position:"absolute", bottom:16, left:16, zIndex:200, background:surface, border:`1px solid ${borderHi}`, borderRadius:14, padding:"13px 14px", width:260, boxShadow:"0 16px 48px rgba(0,0,0,0.6)" }}>
             {/* Hub header */}

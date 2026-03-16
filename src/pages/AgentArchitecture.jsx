@@ -25,17 +25,17 @@ const textFade   = "rgba(255,255,255,0.4)"
 function FloatingObjects() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-      {[...Array(12)].map((_, i) => (
+      {[...Array(6)].map((_, i) => (
         <motion.div key={i}
           initial={{ x: Math.random() * 800, y: Math.random() * 500, opacity: 0 }}
           animate={{ 
-            x: [null, Math.random() * 800, Math.random() * 800], 
-            y: [null, Math.random() * 500, Math.random() * 500],
-            opacity: [0, 0.8, 0]
+            x: [null, Math.random() * 800], 
+            y: [null, Math.random() * 500],
+            opacity: [0, 0.6, 0]
           }}
-          transition={{ duration: 10 + i * 2, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 15 + i * 5, repeat: Infinity, ease: "linear" }}
           style={{ 
-            position: "absolute", width: 2 + i % 4, height: 2 + i % 4, 
+            position: "absolute", width: 2, height: 2, 
             borderRadius: "50%", background: "#00B4D8", filter: "blur(1px)" 
           }}
         />
@@ -591,9 +591,9 @@ export default function AgentArchitecture() {
                <rect width="100%" height="100%" fill="url(#radarGrid)" />
 
                {/* Large concentric rings */}
-               <motion.circle cx="50%" cy="50%" r="160" fill="none" stroke="rgba(0,180,216,0.08)" strokeWidth="1" animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 4, repeat: Infinity }} />
-               <motion.circle cx="50%" cy="50%" r="280" fill="none" stroke="rgba(0,180,216,0.05)" strokeWidth="1" animate={{ opacity: [0.1, 0.3, 0.1] }} transition={{ duration: 6, repeat: Infinity }} />
-               <motion.circle cx="50%" cy="50%" r="400" fill="none" stroke="rgba(0,180,216,0.03)" strokeWidth="1" />
+               <circle cx="50%" cy="50%" r="160" fill="none" stroke="rgba(0,180,216,0.06)" strokeWidth="1" />
+               <circle cx="50%" cy="50%" r="280" fill="none" stroke="rgba(0,180,216,0.04)" strokeWidth="1" />
+               <circle cx="50%" cy="50%" r="400" fill="none" stroke="rgba(0,180,216,0.02)" strokeWidth="1" />
             </svg>
           </div>
 
@@ -657,87 +657,114 @@ export default function AgentArchitecture() {
           {/* Agent detail / placeholder */}
           <AnimatePresence mode="wait">
             {selected ? (
-              <motion.div key={selected.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+              <motion.div key={selected.id} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
                 className="rounded-3xl overflow-hidden relative"
                 style={{ 
-                  background: surfaceMid, 
-                  border: `1.5px solid ${selected.color}40`,
-                  boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 20px ${selected.color}15`
+                  background: "rgba(10, 8, 32, 0.4)", 
+                  backdropFilter: "blur(40px) saturate(180%)",
+                  border: `1.5px solid ${selected.color}60`,
+                  boxShadow: `0 30px 100px rgba(0,0,0,0.8), 0 0 40px ${selected.color}15`,
+                  minHeight: "520px", display: "flex", flexDirection: "column"
                 }}>
                 
-                {/* Holographic Header */}
+                {/* Holographic Scanning Scanline */}
+                <motion.div 
+                  animate={{ y: [0, 520, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  style={{ position: "absolute", left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${selected.color}, transparent)`, opacity: 0.3, zIndex: 10, pointerEvents: "none" }}
+                />
+
+                {/* Tactical Header */}
                 <div style={{
-                  padding: "24px 20px",
-                  background: `linear-gradient(145deg, ${selected.color}25 0%, transparent 70%)`,
-                  borderBottom: `1px solid ${selected.color}30`,
+                  padding: "28px 24px",
+                  background: `linear-gradient(135deg, ${selected.color}25 0%, transparent 80%)`,
+                  borderBottom: `1px solid rgba(255,255,255,0.08)`,
                   position: "relative"
                 }}>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-5">
                     <div style={{ 
-                      width: 64, height: 64, borderRadius: 20, flexShrink: 0, 
+                      width: 72, height: 72, borderRadius: 22, flexShrink: 0, 
                       background: selected.tagBg, border: `1.5px solid ${selected.tagBdr}`, 
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      boxShadow: `0 0 15px ${selected.color}20`
+                      boxShadow: `0 12px 30px rgba(0,0,0,0.3)`
                     }}>
-                      <img src={selected.img} alt={selected.name} style={{ width: 40, height: 40, objectFit: "contain", filter: `drop-shadow(0 0 8px ${selected.color})` }} />
+                      <img src={selected.img} alt={selected.name} style={{ width: 44, height: 44, objectFit: "contain", filter: `drop-shadow(0 0 10px ${selected.color})` }} />
                     </div>
-                    <div>
-                      <div style={{ color: textOn, fontWeight: 950, fontSize: 18, letterSpacing: "-0.02em" }}>{selected.name}</div>
-                      <div className="inline-flex items-center gap-2 mt-1.5 px-2 py-1 rounded-md"
-                        style={{ background: `${selected.color}15`, border: `1px solid ${selected.color}30`, color: selected.color, fontSize: 9, fontWeight: 900, letterSpacing: "0.1em" }}>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: selected.color, boxShadow: `0 0 5px ${selected.color}` }} />
-                        DEEP INTELLIGENCE ACTIVE
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: textOn, fontWeight: 950, fontSize: 20, letterSpacing: "-0.02em", textTransform: "uppercase" }}>{selected.short} CORE</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 8px #22C55E" }} />
+                        <span style={{ color: "#22C55E", fontSize: 10, fontWeight: 900, letterSpacing: "0.15em" }}>NEURAL SYNC CRYSTALIZED</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-5 space-y-6">
-                  <div>
-                    <div className="text-[10px] font-bold text-[#00B4D8]/50 uppercase tracking-[0.2em] mb-2">Core Assignment</div>
-                    <p style={{ color: textSub, fontSize: 13, lineHeight: 1.6, fontWeight: 500 }}>{selected.desc}</p>
+                <div className="p-6 space-y-7 flex-1">
+                  {/* Thought Stream */}
+                  <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.05)", padding: 12 }}>
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <div style={{ color: selected.color, fontSize: 9, fontWeight: 900, letterSpacing: "0.1em" }}>THOUGHT_STREAM.LOG</div>
+                      <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 8, fontFamily: "monospace" }}>0xC42A9...</div>
+                    </div>
+                    <div className="space-y-1.5 h-20 overflow-hidden relative">
+                      {[
+                        `INITIALIZING ${selected.short} ARCHITECTURE...`,
+                        `BENCHMARKING 6,200+ DATA VECTORS...`,
+                        `NEURAL WEIGHTS OPTIMIZED AT 99.2%`,
+                        `DECODING SUB-LAYER TELEMETRY...`,
+                        `ACTIVE HUB CLUSTER DETECTED: ASIA-PAC`
+                      ].map((log, i) => (
+                        <motion.div key={i}
+                          initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.15 }}
+                          style={{ color: i === 4 ? selected.color : "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.02em" }}>
+                          <span style={{ opacity: 0.3 }}>[{new Date().toLocaleTimeString('en-US', { hour12: false })}]</span> {log}
+                        </motion.div>
+                      ))}
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent, rgba(10,8,30,0.8))" }} />
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Core Metrics */}
+                  <div className="grid grid-cols-3 gap-3">
                     {selected.metrics.map((m, i) => (
-                      <div key={m.label} className="p-3 rounded-2xl bg-white/5 border border-white/5 text-center">
-                        <div style={{ color: selected.color, fontWeight: 950, fontSize: 16 }}>{m.val}</div>
-                        <div style={{ color: textFade, fontSize: 9, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>{m.label}</div>
+                      <div key={m.label} style={{ padding: "14px 10px", borderRadius: 18, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", textAlign: "center" }}>
+                        <div style={{ color: selected.color, fontWeight: 950, fontSize: 18, letterSpacing: "-0.02em" }}>{m.val}</div>
+                        <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontWeight: 800, textTransform: "uppercase", marginTop: 4 }}>{m.label}</div>
                       </div>
                     ))}
                   </div>
 
-                  <div>
-                    <div className="text-[10px] font-bold text-[#00B4D8]/50 uppercase tracking-[0.2em] mb-3">Live Processes</div>
-                    <div className="space-y-2">
-                      {selected.tasks.map((task, i) => (
-                        <motion.div key={task} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                          className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05] group">
-                          <div className="w-1 h-1 rounded-full" style={{ background: selected.color }} />
-                          <span style={{ color: textSub, fontSize: 12, fontWeight: 500 }}>{task}</span>
-                          <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: selected.color, animation: "arch-pulse 1s infinite" }} />
-                        </motion.div>
-                      ))}
-                    </div>
+                  {/* Operational Tasks */}
+                  <div className="space-y-2.5">
+                    {selected.tasks.slice(0, 3).map((task, i) => (
+                      <div key={i} className="flex items-center gap-4 group">
+                        <div style={{ width: 12, height: 12, borderRadius: 4, border: `1px solid ${selected.color}60`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <motion.div animate={{ scale: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }} style={{ width: 4, height: 4, borderRadius: "50%", background: selected.color }} />
+                        </div>
+                        <span style={{ color: textSub, fontSize: 13, fontWeight: 600 }}>{task}</span>
+                        <div style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,255,255,0.2)", fontWeight: 700 }}>PROCESSED</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Bottom navigation links */}
-                <div className="p-4 bg-black/20 border-t border-white/5">
-                  <div className="text-[9px] font-bold text-white/30 uppercase tracking-[0.15em] mb-3 px-1">Network Dependencies</div>
-                  <div className="flex flex-wrap gap-2">
+                {/* Tactical Footer */}
+                <div className="px-6 py-5 bg-black/30 border-t border-white/5 flex items-center justify-between">
+                  <div className="flex gap-1.5">
                     {selected.dataFlows.map(id => {
-                      const t = AGENTS.find(a => a.id === id)
+                      const t = AGENTS.find(a => a.id === id);
                       return (
-                        <button key={id} onClick={() => setActiveAgent(id)}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all hover:bg-white/10"
-                          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${t.color}30`, color: t.color, fontSize: 10, fontWeight: 700 }}>
+                        <div key={id} style={{ width: 24, height: 24, borderRadius: 7, background: t.tagBg, border: `1px solid ${t.tagBdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <img src={t.img} alt="" style={{ width: 14, height: 14, objectFit: "contain" }} />
-                          {t.short}
-                        </button>
+                        </div>
                       )
                     })}
                   </div>
+                  <button onClick={() => setActiveAgent(null)}
+                    style={{ background: `${selected.color}20`, border: `1px solid ${selected.color}40`, color: selected.color, padding: "6px 14px", borderRadius: 10, fontSize: 10, fontWeight: 900, letterSpacing: "0.05em" }}>
+                    RELEASE UNIT
+                  </button>
                 </div>
               </motion.div>
             ) : (
@@ -745,54 +772,53 @@ export default function AgentArchitecture() {
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="rounded-3xl overflow-hidden relative"
                 style={{ 
-                  background: surface, 
+                  background: "rgba(15, 12, 50, 0.3)", 
+                  backdropFilter: "blur(20px)",
                   border: `1.5px solid ${border}`,
-                  padding: "40px 24px",
+                  padding: "60px 24px",
                   textAlign: "center",
-                  minHeight: "480px",
+                  minHeight: "520px",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center"
                 }}>
                 
-                {/* Techy background pattern for placeholder */}
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-                  <svg width="100%" height="100%">
-                    <pattern id="diagGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" strokeWidth="0.5"/>
-                    </pattern>
-                    <rect width="100%" height="100%" fill="url(#diagGrid)" />
-                  </svg>
-                </div>
-
-                <div className="relative mb-8">
+                {/* Visual Core Diagnostic */}
+                <div style={{ position: "relative", marginBottom: 30 }}>
                   <motion.div 
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-[-20px] rounded-full border border-dashed border-[#00B4D8]/20" 
+                    transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                    style={{ position: "absolute", inset: -40, border: "1px dashed rgba(255,255,255,0.05)", borderRadius: "50%" }}
                   />
-                   <motion.div 
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-[-10px] rounded-full border border-dashed border-[#8B5CF6]/30" 
-                  />
-                  <img src={lorriLogo} alt="LoRRI" style={{ width: 80, height: 80, objectFit: "contain", filter: "brightness(0.8) grayscale(0.5)", opacity: 0.6 }} />
+                  <div style={{ position: "relative", zIndex: 2 }}>
+                    <div style={{ width: 100, height: 100, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,180,216,0.1) 0%, transparent 70%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <motion.img 
+                        animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.05, 1] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                        src={lorriLogo} alt="LoRRI" style={{ width: 64, height: 64, objectFit: "contain", filter: "brightness(0.6) grayscale(0.5)" }} 
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Floating Hexagon Grid */}
+                  <div style={{ position: "absolute", inset: -60, pointerEvents: "none", opacity: 0.1 }}>
+                    <svg width="100%" height="100%" viewBox="0 0 200 200">
+                      <path d="M100 20 L160 55 L160 125 L100 160 L40 125 L40 55 Z" fill="none" stroke="white" strokeWidth="0.5" />
+                      <path d="M100 40 L140 65 L140 115 L100 140 L60 115 L60 65 Z" fill="none" stroke="white" strokeWidth="0.5" />
+                    </svg>
+                  </div>
                 </div>
 
-                <h3 style={{ color: textOn, fontSize: 18, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.01em" }}>LoRRI Core Diagnostic</h3>
-                <p style={{ color: textSub, fontSize: 13, lineHeight: 1.7, maxWidth: 240 }}>
-                  Select an application node to initialize deep-packet inspection and agent telemetry.
+                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: 900, letterSpacing: "0.2em", marginBottom: 12 }}>NEURAL HUB OFFLINE</div>
+                <h3 style={{ color: textOn, fontSize: 20, fontWeight: 950, marginBottom: 14, letterSpacing: "-0.01em" }}>LoRRI CORE</h3>
+                <p style={{ color: textFade, fontSize: 13, lineHeight: 1.7, maxWidth: 280, fontWeight: 500 }}>
+                  Select an agent entity from the neural map to establish a deep intelligence uplink.
                 </p>
 
-                <div className="mt-10 flex gap-2">
-                  {[...Array(3)].map((_, i) => (
-                    <motion.div key={i}
-                      animate={{ opacity: [0.2, 0.5, 0.2] }}
-                      transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
-                      className="w-8 h-1 rounded-full bg-[#00B4D8]"
-                    />
-                  ))}
+                <div className="mt-12 flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, fontWeight: 900, letterSpacing: "0.1em" }}>READY FOR INTERROGATION</div>
                 </div>
               </motion.div>
             )}
