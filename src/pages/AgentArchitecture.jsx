@@ -486,31 +486,46 @@ export default function AgentArchitecture() {
     <div className="max-w-7xl mx-auto space-y-6">
 
       {/* ── Header ── */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-            style={{ background: "rgba(0,180,216,0.1)", border: "1px solid rgba(0,180,216,0.25)" }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22C55E", animation: "arch-pulse 1.5s ease-in-out infinite" }} />
-            <span style={{ color: "#00B4D8", fontSize: 10, fontWeight: 800, letterSpacing: "0.12em" }}>
-              LIVE · ALL 4 AGENTS ACTIVE
-            </span>
+      <div className="space-y-5">
+        <nav className="flex items-center gap-2 text-[11px] font-bold tracking-widest text-[#00B4D8]/60 uppercase">
+          <span className="hover:text-[#00B4D8] cursor-pointer transition-colors">DASHBOARD</span>
+          <span className="text-white/20">/</span>
+          <span className="text-white/90">AI CORE <span className="text-[#8B5CF6]">(BRAIN)</span></span>
+        </nav>
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 style={{ 
+              color: "#fff", 
+              fontSize: "32px", 
+              fontWeight: 950, 
+              letterSpacing: "-0.04em",
+              lineHeight: 1.1,
+              textShadow: "0 0 30px rgba(0,180,216,0.3)" 
+            }}>
+              AI Agent <span style={{ background: "linear-gradient(to right, #00B4D8, #8B5CF6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Architecture</span>
+            </h1>
+            <p style={{ color: textFade, fontSize: "14px", marginTop: "4px" }}>
+              Four autonomous agents managing global disruptions.
+            </p>
           </div>
-          {/* Hormuz crisis banner */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-            style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#EF4444", animation: "arch-pulse 1s ease-in-out infinite" }} />
-            <span style={{ color: "#FCA5A5", fontSize: 10, fontWeight: 800, letterSpacing: "0.1em" }}>
-              ⚠ HORMUZ STRAIT CRISIS — ACTIVE REROUTING
-            </span>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{ background: "rgba(0,180,216,0.08)", border: "1px solid rgba(0,180,216,0.2)", backdropFilter: "blur(8px)" }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22C55E", animation: "arch-pulse 1s ease-in-out infinite" }} />
+              <span style={{ color: "#00B4D8", fontSize: 10, fontWeight: 900, letterSpacing: "0.12em" }}>
+                SYSTEM ONLINE · 4 AGENTS
+              </span>
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", backdropFilter: "blur(8px)" }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#EF4444", animation: "arch-pulse 0.8s ease-in-out infinite" }} />
+              <span style={{ color: "#FCA5A5", fontSize: 10, fontWeight: 900, letterSpacing: "0.12em" }}>
+                CRISIS: HORMUZ STRAIT
+              </span>
+            </div>
           </div>
-        </div>
-        <div>
-          <h1 style={{ color: textOn, fontSize: typography["3xl"], fontWeight: typography.bold, letterSpacing: typography.tight, marginBottom: 6 }}>
-            AI Agent Architecture
-          </h1>
-          <p style={{ color: textSub, fontSize: typography.base }}>
-            Four autonomous agents working in concert — currently managing Strait of Hormuz disruption across 340+ affected shipments
-          </p>
         </div>
       </div>
 
@@ -642,66 +657,83 @@ export default function AgentArchitecture() {
           {/* Agent detail / placeholder */}
           <AnimatePresence mode="wait">
             {selected ? (
-              <motion.div key={selected.id}
-                initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
-                className="rounded-2xl overflow-hidden"
+              <motion.div key={selected.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                className="rounded-3xl overflow-hidden relative"
                 style={{ 
-                  background: "rgba(255,255,255,0.03)", 
-                  backdropFilter: "blur(16px)",
-                  border: `1px solid ${selected.color}45`, 
-                  boxShadow: `0 20px 50px rgba(0,0,0,0.3), 0 0 40px ${selected.dimGlow}` 
+                  background: surfaceMid, 
+                  border: `1.5px solid ${selected.color}40`,
+                  boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 20px ${selected.color}15`
                 }}>
+                
+                {/* Holographic Header */}
                 <div style={{
-                  padding: "20px",
-                  background: `linear-gradient(145deg, ${selected.color}20 0%, transparent 80%)`,
-                  borderBottom: `1px solid ${border}`,
-                  display: "flex", alignItems: "center", gap: 16,
+                  padding: "24px 20px",
+                  background: `linear-gradient(145deg, ${selected.color}25 0%, transparent 70%)`,
+                  borderBottom: `1px solid ${selected.color}30`,
+                  position: "relative"
                 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, flexShrink: 0, background: selected.tagBg, border: `1px solid ${selected.tagBdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <img src={selected.img} alt={selected.name} style={{ width: 36, height: 36, objectFit: "contain", filter: `drop-shadow(0 0 6px ${selected.color})` }} />
+                  <div className="flex items-center gap-4">
+                    <div style={{ 
+                      width: 64, height: 64, borderRadius: 20, flexShrink: 0, 
+                      background: selected.tagBg, border: `1.5px solid ${selected.tagBdr}`, 
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      boxShadow: `0 0 15px ${selected.color}20`
+                    }}>
+                      <img src={selected.img} alt={selected.name} style={{ width: 40, height: 40, objectFit: "contain", filter: `drop-shadow(0 0 8px ${selected.color})` }} />
+                    </div>
+                    <div>
+                      <div style={{ color: textOn, fontWeight: 950, fontSize: 18, letterSpacing: "-0.02em" }}>{selected.name}</div>
+                      <div className="inline-flex items-center gap-2 mt-1.5 px-2 py-1 rounded-md"
+                        style={{ background: `${selected.color}15`, border: `1px solid ${selected.color}30`, color: selected.color, fontSize: 9, fontWeight: 900, letterSpacing: "0.1em" }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: selected.color, boxShadow: `0 0 5px ${selected.color}` }} />
+                        DEEP INTELLIGENCE ACTIVE
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                <div className="p-5 space-y-6">
                   <div>
-                    <div style={{ color: textOn, fontWeight: 900, fontSize: 17, marginBottom: 4 }}>{selected.name}</div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md"
-                      style={{ background: selected.tagBg, border: `1px solid ${selected.tagBdr}`, color: selected.color, fontSize: 9, fontWeight: 900, letterSpacing: "0.1em" }}>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: selected.color, animation: "arch-pulse 1.5s ease-in-out infinite" }} />
-                      AGENT ACTIVE
+                    <div className="text-[10px] font-bold text-[#00B4D8]/50 uppercase tracking-[0.2em] mb-2">Core Assignment</div>
+                    <p style={{ color: textSub, fontSize: 13, lineHeight: 1.6, fontWeight: 500 }}>{selected.desc}</p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {selected.metrics.map((m, i) => (
+                      <div key={m.label} className="p-3 rounded-2xl bg-white/5 border border-white/5 text-center">
+                        <div style={{ color: selected.color, fontWeight: 950, fontSize: 16 }}>{m.val}</div>
+                        <div style={{ color: textFade, fontSize: 9, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>{m.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] font-bold text-[#00B4D8]/50 uppercase tracking-[0.2em] mb-3">Live Processes</div>
+                    <div className="space-y-2">
+                      {selected.tasks.map((task, i) => (
+                        <motion.div key={task} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                          className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05] group">
+                          <div className="w-1 h-1 rounded-full" style={{ background: selected.color }} />
+                          <span style={{ color: textSub, fontSize: 12, fontWeight: 500 }}>{task}</span>
+                          <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: selected.color, animation: "arch-pulse 1s infinite" }} />
+                        </motion.div>
+                      ))}
                     </div>
                   </div>
                 </div>
-                <div className="p-5 border-b border-white/10">
-                  <p style={{ color: textSub, fontSize: 13, lineHeight: 1.7 }}>{selected.desc}</p>
-                </div>
-                <div className="grid grid-cols-3 border-b border-white/10">
-                  {selected.metrics.map((m, i) => (
-                    <div key={m.label} className={`p-4 text-center ${i < 2 ? "border-r border-white/10" : ""}`}>
-                      <div style={{ color: selected.color, fontWeight: 900, fontSize: 18, lineHeight: 1 }}>{m.val}</div>
-                      <div style={{ color: textFade, fontSize: 10, marginTop: 4, lineHeight: 1.4 }}>{m.label}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-5 border-b border-white/10">
-                  <div style={{ color: textFade, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Active tasks</div>
-                  {selected.tasks.map((task, i) => (
-                    <motion.div key={task} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
-                      className="flex items-center gap-3 p-2 rounded-lg border border-transparent hover:border-white/5 hover:bg-white/5 transition-all mb-1 group">
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: selected.color, flexShrink: 0, boxShadow: `0 0 5px ${selected.color}` }} />
-                      <span style={{ color: textSub, fontSize: 13, fontWeight: 500 }}>{task}</span>
-                      <span className="ml-auto opacity-0 group-hover:opacity-100 text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10" style={{ color: textFade }}>RUNNING</span>
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="p-4">
-                  <div style={{ color: textFade, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Sends data to</div>
+
+                {/* Bottom navigation links */}
+                <div className="p-4 bg-black/20 border-t border-white/5">
+                  <div className="text-[9px] font-bold text-white/30 uppercase tracking-[0.15em] mb-3 px-1">Network Dependencies</div>
                   <div className="flex flex-wrap gap-2">
                     {selected.dataFlows.map(id => {
                       const t = AGENTS.find(a => a.id === id)
                       return (
                         <button key={id} onClick={() => setActiveAgent(id)}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all"
-                          style={{ background: t.tagBg, border: `1px solid ${t.tagBdr}`, color: t.color, fontSize: 11, fontWeight: 700 }}>
-                          <img src={t.img} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} />
-                          {t.short} →
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all hover:bg-white/10"
+                          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${t.color}30`, color: t.color, fontSize: 10, fontWeight: 700 }}>
+                          <img src={t.img} alt="" style={{ width: 14, height: 14, objectFit: "contain" }} />
+                          {t.short}
                         </button>
                       )
                     })}
@@ -711,12 +743,57 @@ export default function AgentArchitecture() {
             ) : (
               <motion.div key="placeholder"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="p-8 rounded-2xl text-center" style={{ background: surface, border: `1px solid ${border}` }}>
-                <img src={lorriLogo} alt="LoRRI" style={{ width: 60, height: 60, objectFit: "contain", opacity: 0.3, margin: "0 auto 16px" }} />
-                <div style={{ color: textSub, fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Select an agent</div>
-                <p style={{ color: textFade, fontSize: 13, lineHeight: 1.7 }}>
-                  Click any node to explore capabilities, metrics, and live data flows.
+                className="rounded-3xl overflow-hidden relative"
+                style={{ 
+                  background: surface, 
+                  border: `1.5px solid ${border}`,
+                  padding: "40px 24px",
+                  textAlign: "center",
+                  minHeight: "480px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                
+                {/* Techy background pattern for placeholder */}
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+                  <svg width="100%" height="100%">
+                    <pattern id="diagGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" strokeWidth="0.5"/>
+                    </pattern>
+                    <rect width="100%" height="100%" fill="url(#diagGrid)" />
+                  </svg>
+                </div>
+
+                <div className="relative mb-8">
+                  <motion.div 
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-[-20px] rounded-full border border-dashed border-[#00B4D8]/20" 
+                  />
+                   <motion.div 
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-[-10px] rounded-full border border-dashed border-[#8B5CF6]/30" 
+                  />
+                  <img src={lorriLogo} alt="LoRRI" style={{ width: 80, height: 80, objectFit: "contain", filter: "brightness(0.8) grayscale(0.5)", opacity: 0.6 }} />
+                </div>
+
+                <h3 style={{ color: textOn, fontSize: 18, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.01em" }}>LoRRI Core Diagnostic</h3>
+                <p style={{ color: textSub, fontSize: 13, lineHeight: 1.7, maxWidth: 240 }}>
+                  Select an application node to initialize deep-packet inspection and agent telemetry.
                 </p>
+
+                <div className="mt-10 flex gap-2">
+                  {[...Array(3)].map((_, i) => (
+                    <motion.div key={i}
+                      animate={{ opacity: [0.2, 0.5, 0.2] }}
+                      transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
+                      className="w-8 h-1 rounded-full bg-[#00B4D8]"
+                    />
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

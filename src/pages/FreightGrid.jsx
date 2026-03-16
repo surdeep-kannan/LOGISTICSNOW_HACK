@@ -216,7 +216,17 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
   const [search,       setSearch]      = useState("")
   const [tickerIdx,    setTickerIdx]   = useState(0)
   const [filterMode,   setFilterMode]  = useState("all")
-  const [sidebarOpen,  setSidebarOpen] = useState(true)
+  const [sidebarOpen,  setSidebarOpen] = useState(window.innerWidth > 768)
+
+  // Responsive sidebar handling
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) setSidebarOpen(false)
+      else setSidebarOpen(true)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Cycle ticker
   useEffect(() => {
@@ -228,7 +238,10 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
   const handleSetActiveHub = (idOrFn) => {
     setActiveHub(prev => {
       const next = typeof idOrFn === 'function' ? idOrFn(prev) : idOrFn
-      if (next) setTab('lane')
+      if (next) {
+        setTab('lane')
+        if (window.innerWidth <= 768) setSidebarOpen(true)
+      }
       return next
     })
   }
@@ -277,6 +290,8 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
             right: 0;
             top: 0;
             bottom: 0;
+            width: 85% !important;
+            max-width: 320px;
             height: 100%;
             z-index: 100 !important;
             box-shadow: -10px 0 30px rgba(0,0,0,0.5);
@@ -573,6 +588,38 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Floating Action Button */}
+      <div className="md:hidden">
+        <AnimatePresence>
+          {!sidebarOpen && (
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              onClick={() => setSidebarOpen(true)}
+              style={{
+                position: "absolute",
+                bottom: 24,
+                right: 24,
+                zIndex: 50,
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: colors.gradientAccent,
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                color: "#fff"
+              }}
+            >
+              <FunnelIcon style={{ width: 24, height: 24 }} />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
 
     </div>
   )

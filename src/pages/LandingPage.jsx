@@ -646,7 +646,7 @@ export default function LandingPage() {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.success, display: "block", animation: "lp-pulse 1.5s infinite" }} />
               <span style={{ color: C.accent, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em" }}>AI-POWERED FREIGHT INTELLIGENCE</span>
             </motion.div>
-            <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }}
+            <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }}
               style={{ fontSize: "clamp(32px, 4.5vw, 58px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 20 }}>
               India's First{" "}
               <span style={{ background: C.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
@@ -654,7 +654,7 @@ export default function LandingPage() {
               </span>
               <br />Intelligence Platform
             </motion.h1>
-            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.18 }}
+            <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
               style={{ color: C.textMid, fontSize: "clamp(14px, 1.4vw, 16px)", lineHeight: 1.75, marginBottom: 32, maxWidth: 460, fontWeight: 400 }}>
               Autonomous AI agents handle procurement, routing, and sustainability across 50M+ data points and 20,000+ Indian routes. Zero manual effort.
             </motion.p>
@@ -691,14 +691,14 @@ export default function LandingPage() {
 
       {/* ── STATS ── */}
       <section style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, background: "rgba(0,0,0,0.15)" }}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 max-w-[1100px] mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-4 max-w-[1100px] mx-auto overflow-hidden">
           {STATS.map((s, i) => (
             <motion.div key={s.label}
-              initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
-              className={`padding-[28px 16px] text-center ${i % 2 !== 1 ? "border-r border-white/10" : ""} ${i < 2 ? "lg:border-b-0 border-b border-white/10" : "lg:border-b-0"} lg:border-r border-white/10 last:border-r-0`}
+              initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.05 }}
+              className={`text-center ${i % 2 !== 1 ? "border-r border-white/10" : ""} ${i < 2 ? "lg:border-b-0 border-b border-white/10" : "lg:border-b-0"} lg:border-r border-white/10 last:border-r-0 hover:bg-white/[0.02] transition-colors`}
               style={{ padding: "28px 16px" }}>
-              <div style={{ fontSize: "clamp(24px, 3.5vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em", color: C.textHi, marginBottom: 6 }}>{s.val}</div>
-              <div style={{ color: C.textLow, fontSize: 12, lineHeight: 1.4 }}>{s.label}</div>
+              <div style={{ fontSize: "clamp(24px, 3.2vw, 40px)", fontWeight: 900, letterSpacing: "-0.02em", color: C.textHi, marginBottom: 6 }}>{s.val}</div>
+              <div style={{ color: C.textLow, fontSize: 11, fontWeight: 600 }}>{s.label}</div>
             </motion.div>
           ))}
         </div>
@@ -853,17 +853,15 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          {/* Embedded Map */}
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
+          {/* Embedded Map — Scaled height for mobile */}
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
             style={{ borderRadius: 20, overflow: "hidden", border: `1px solid ${C.borderUp}`, boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}>
             <Suspense fallback={
-              <div style={{ height: 680, background: "#2D2566", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
-                <div style={{ width: 28, height: 28, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: C.accent, borderRadius: "50%", animation: "lp-pulse 0.75s linear infinite" }} />
-                <span style={{ color: C.textLow, fontSize: 13 }}>Loading global freight grid…</span>
+              <div style={{ height: "clamp(400px, 60vh, 680px)", background: "#2D2566", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: C.accent, borderRadius: "50%", animation: "lp-pulse 0.75s linear infinite" }} />
               </div>
             }>
-            <FreightGrid embedded={true} embeddedHeight="680px" />
+            <FreightGrid embedded={true} embeddedHeight="clamp(450px, 70vh, 680px)" />
             </Suspense>
           </motion.div>
 
