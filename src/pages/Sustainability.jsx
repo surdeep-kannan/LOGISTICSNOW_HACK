@@ -3,8 +3,8 @@ import { motion } from "framer-motion"
 import { colors, typography } from "../styles"
 import { shipments as shipmentsApi } from "../lib/api"
 
-const surface    = "#332B7A"
-const surfaceMid = "#3D3585"
+const surface    = "#453D9A"
+const surfaceMid = "#4F47AA"
 const border     = "rgba(255,255,255,0.1)"
 const textOn     = "rgba(255,255,255,0.95)"
 const textSub    = "rgba(255,255,255,0.65)"
@@ -222,7 +222,7 @@ export default function Sustainability() {
           <h2 style={{ color: textOn, fontWeight: typography.semibold, fontSize: typography.lg }}>ESG Summary Report</h2>
 
           {[
-            { label: "Environmental Score",  value: `${Math.min(60 + savingPct, 100)}/100`, color: green,         desc: "Based on CO₂ reduction vs baseline" },
+            { label: "Environmental Score",  value: `${Math.min(40 + savingPct, 100)}/100`, color: green,         desc: "Based on CO₂ reduction vs baseline" },
             { label: "Social Score",         value: "72/100",                                color: colors.accent,  desc: "Ethical carrier partnerships & labour compliance" },
             { label: "Governance Score",     value: "85/100",                                color: "#A5B4FC",      desc: "Audit trails, compliance logs & data security" },
           ].map((item, i) => (

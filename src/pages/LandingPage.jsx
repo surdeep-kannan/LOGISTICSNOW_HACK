@@ -12,23 +12,23 @@ const FreightGrid = lazy(() => import("./FreightGrid"))
 
 // ── Design tokens ─────────────────────────────────────────
 const C = {
-  bg: "#393185",
+  bg: "#393185", // Deeper background
   surface: "#453D9A",
   surfaceMid: "#4F47AA",
-  card: "#3D3592",
-  border: "rgba(255,255,255,0.1)",
-  borderUp: "rgba(255,255,255,0.18)",
-  accent: "#00B4D8",
-  accentDim: "rgba(0,180,216,0.15)",
-  accentGlow: "rgba(0,180,216,0.25)",
+  card: "#453D9A",
+  border: "rgba(255,255,255,0.08)",
+  borderUp: "rgba(255,255,255,0.14)",
+  accent: "#00B4D8", // Original Bright Blue
+  accentDim: "rgba(0,180,216,0.12)",
+  accentGlow: "rgba(0,180,216,0.2)",
   primary: "#0077B6",
-  success: "#22C55E",
+  success: "#10B981",
   warning: "#F59E0B",
   error: "#EF4444",
   textHi: "rgba(255,255,255,0.95)",
-  textMid: "rgba(255,255,255,0.6)",
-  textLow: "rgba(255,255,255,0.35)",
-  grad: "linear-gradient(135deg, #0077B6 0%, #00B4D8 100%)",
+  textMid: "rgba(255,255,255,0.65)",
+  textLow: "rgba(255,255,255,0.4)",
+  grad: "linear-gradient(135deg, #0077B6 0%, #00B4D8 100%)", // Original Gradient
 }
 
 const TICKER_ITEMS = [
@@ -72,7 +72,7 @@ const AGENTS_LP = [
   {
     id: "procurement", name: "Procurement Agent", short: "PROCURE",
     img: containerTruck, color: "#00B4D8",
-    tagBg: "rgba(0,180,216,0.12)", tagBdr: "rgba(0,180,216,0.3)",
+    tagBg: "rgba(0,180,216,0.15)", tagBdr: "rgba(0,180,216,0.3)",
     stat: "32% avg savings", desc: "Autonomously negotiates rates across 2,000+ carriers 24/7.",
   },
   {
@@ -624,7 +624,7 @@ export default function LandingPage() {
             { tag: "LIVE", text: "Optimization Engine rerouted 12 container ships near Suez to avoid 4hr weather delay" },
             { tag: "SAVING", text: "Global Grid just identified 18% lower spot rate for Shanghai → Mumbai corridor" },
           ].map((item, i) => (
-            <div key={i+"-rep"} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div key={i + "-rep"} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 9, fontWeight: 900, padding: "2px 6px", borderRadius: 4, background: item.tag === "LIVE" ? "rgba(34,197,94,0.15)" : "rgba(0,180,216,0.15)", color: item.tag === "LIVE" ? C.success : C.accent, border: `1px solid ${item.tag === "LIVE" ? C.success : C.accent}40` }}>{item.tag}</span>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{item.text}</span>
             </div>
@@ -858,14 +858,14 @@ export default function LandingPage() {
           {/* Interactive Globe Thumbnail (Frozen for Performance) */}
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             whileHover={{ scale: 1.01 }} transition={{ duration: 0.6 }}
-            style={{ 
-              borderRadius: 24, overflow: "hidden", 
-              border: `1.5px solid ${C.borderUp}`, 
+            style={{
+              borderRadius: 24, overflow: "hidden",
+              border: `1.5px solid ${C.borderUp}`,
               boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
-              position: "relative", background: "#2D2566" 
+              position: "relative", background: C.bg 
             }}>
             <Suspense fallback={
-              <div style={{ height: "clamp(400px, 60vh, 600px)", background: "#2D2566", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ height: "clamp(400px, 60vh, 600px)", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: C.accent, borderRadius: "50%", animation: "lp-pulse 0.75s linear infinite" }} />
               </div>
             }>
@@ -873,11 +873,11 @@ export default function LandingPage() {
             </Suspense>
 
             {/* Shield Overlay to capture clicks and prevent scrolling interference */}
-            <div 
+            <div
               onClick={() => window.open("/grid", "_blank")}
-              style={{ position: "absolute", inset: 0, cursor: "pointer", zIndex: 10, background: "rgba(0,0,0,0)" }} 
+              style={{ position: "absolute", inset: 0, cursor: "pointer", zIndex: 10, background: "rgba(0,0,0,0)" }}
             />
-            
+
             {/* Interactive Hint */}
             <div style={{ position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8, alignItems: "center", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)", padding: "10px 20px", borderRadius: 99, border: `1px solid ${C.borderUp}`, zIndex: 11, pointerEvents: "none" }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.success, animation: "lp-pulse 1.5s infinite" }} />

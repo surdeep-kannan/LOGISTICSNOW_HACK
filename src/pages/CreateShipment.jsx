@@ -20,15 +20,15 @@ import { colors, typography } from "../styles"
 import { auth, shipments as shipmentsApi } from "../lib/api"
 import { getCached } from "../lib/prefetchCache"
 
-const surface     = "#332B7A"
-const surfaceDark = "#1E1856"
+const surface     = "#453D9A"
+const surfaceDark = "#393185"
 const border      = "rgba(255,255,255,0.1)"
 const borderFocus = "rgba(0,180,216,0.7)"
 const textOn      = "rgba(255,255,255,0.95)"
 const textSub     = "rgba(255,255,255,0.65)"
 const textFade    = "rgba(255,255,255,0.35)"
-const inputBg     = "#1E1A4E"
-const selectBg    = "#251E5C"
+const inputBg     = "rgba(255,255,255,0.04)"
+const selectBg    = "rgba(255,255,255,0.04)"
 
 const inputStyle = {
   width: "100%",
@@ -350,7 +350,7 @@ function SavedProfilePicker({ activeId, onSelect, onClear }) {
               minWidth: "min(320px, 90vw)",
               zIndex: 200,
               borderRadius: "1rem",
-              background: "#14113A",
+              background: surfaceDark,
               border: `1px solid ${border}`,
               boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
               overflow: "hidden",

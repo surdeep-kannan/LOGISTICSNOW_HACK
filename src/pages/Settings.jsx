@@ -8,9 +8,9 @@ import {
 import { colors, typography } from "../styles"
 import { auth, upload } from "../lib/api"
 
-const surface     = "#332B7A"
-const surfaceMid  = "#3D3585"
-const surfaceDark = "#2D2566"
+const surface     = "#453D9A"
+const surfaceMid  = "#4F47AA"
+const surfaceDark = "#393185"
 const border      = "rgba(255,255,255,0.1)"
 const textOn      = "rgba(255,255,255,0.95)"
 const textSub     = "rgba(255,255,255,0.65)"

@@ -40,10 +40,10 @@ export default function AgentMiniWidget() {
     const t1 = setInterval(() => {
       setFeedIdx(i => (i + 1) % FEED.length)
       setRequests(r => r + Math.floor(Math.random() * 3 + 1))
-    }, 2600)
+    }, 2800)
     const t2 = setInterval(() => {
       setActiveNode(n => (n + 1) % AGENTS.length)
-    }, 2000)
+    }, 2200)
     return () => { clearInterval(t1); clearInterval(t2) }
   }, [])
 
@@ -51,170 +51,170 @@ export default function AgentMiniWidget() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      className="rounded-2xl overflow-hidden"
-      style={{ background: surface, border: `1px solid ${border}` }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="rounded-[28px] overflow-hidden relative"
+      style={{ 
+        background: "rgba(30, 24, 86, 0.4)", 
+        backdropFilter: "blur(32px) saturate(160%)",
+        border: `1.5px solid rgba(255,255,255,0.08)`,
+        boxShadow: "0 24px 60px rgba(0,0,0,0.5)"
+      }}
     >
+      {/* Holographic Scanline Sweep */}
+      <motion.div 
+        animate={{ y: [-200, 400] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        style={{ position: "absolute", left: 0, right: 0, height: 1.5, background: "linear-gradient(90deg, transparent, rgba(0,180,216,0.5), transparent)", zIndex: 10, pointerEvents: "none", opacity: 0.4 }}
+      />
+
       {/* Header */}
-      <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: `1px solid ${border}` }}>
+      <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)`, background: "rgba(0,0,0,0.2)" }}>
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 style={{ color: textOn, fontWeight: typography.semibold, fontSize: typography.base }}>
-              AI Agent Network
+          <div className="flex items-center gap-3 mb-1.5">
+            <h2 style={{ color: textOn, fontWeight: 900, fontSize: 15, letterSpacing: "-0.01em" }}>
+              NEURAL UPLINK
             </h2>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.25)" }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: colors.success, animation: "agent-pulse 1.5s ease-in-out infinite" }} />
-              <span style={{ color: colors.success, fontSize: 9, fontWeight: 800, letterSpacing: "0.1em" }}>ALL ACTIVE</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)" }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#EF4444", animation: "agent-pulse 1s ease-in-out infinite" }} />
-              <span style={{ color: "#FCA5A5", fontSize: 9, fontWeight: 800, letterSpacing: "0.1em" }}>HORMUZ CRISIS</span>
+            <div className="flex items-center gap-2 px-2 py-0.5 rounded-md"
+              style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)" }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22C55E", boxShadow: "0 0 8px #22C55E", animation: "agent-pulse 1.5s infinite" }} />
+              <span style={{ color: "#22C55E", fontSize: 9, fontWeight: 900, letterSpacing: "0.15em" }}>OPERATIONAL</span>
             </div>
           </div>
-          <p style={{ color: textSub, fontSize: typography.xs }}>
-            {requests.toLocaleString("en-IN")} requests processed · 340+ shipments rerouting
+          <p style={{ color: textFade, fontSize: 10, fontWeight: 600, letterSpacing: "0.02em" }}>
+            {requests.toLocaleString("en-IN")} PACKETS PROCESSED · CORE LOAD LEVEL 04
           </p>
         </div>
         <button
           onClick={() => navigate("/dashboard/architecture")}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-          style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)", color: "#A78BFA" }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(139,92,246,0.22)"}
-          onMouseLeave={e => e.currentTarget.style.background = "rgba(139,92,246,0.12)"}
+          style={{ 
+            background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, 
+            color: textOn, padding: "6px 12px", borderRadius: 10, fontSize: 10, fontWeight: 800, transition: "all 0.2s"
+          }}
+          className="hover:bg-white/[0.1] active:scale-95"
         >
-          AI Brain Explorer →
+          EXPLORE CORE
         </button>
       </div>
 
-
-      <div className="p-5">
-        {/* 4 agent nodes */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
+      <div className="p-6">
+        {/* 4 agent nodes — Redesigned as Core units */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
           {AGENTS.map((agent, i) => {
             const isActive = activeNode === i
             return (
               <motion.div key={agent.id}
-                animate={{ scale: isActive ? 1.04 : 1 }}
-                transition={{ duration: 0.3 }}
-                className="rounded-xl p-3 text-center cursor-pointer"
-                style={{
-                  background: isActive ? `${agent.color}15` : surfaceMid,
-                  border: `1px solid ${isActive ? agent.color + "50" : border}`,
-                  boxShadow: isActive ? `0 0 16px ${agent.color}20` : "none",
-                  transition: "all 0.3s",
-                }}
                 onClick={() => navigate("/dashboard/architecture")}
+                className="relative flex flex-col items-center cursor-pointer group"
               >
-                {/* Agent image */}
-                <div className="flex items-center justify-center mb-2 mx-auto"
-                  style={{ width: 36, height: 36 }}>
+                <div 
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300"
+                  style={{
+                    background: isActive ? `${agent.color}25` : "rgba(0,0,0,0.3)",
+                    border: `1.5px solid ${isActive ? agent.color : "rgba(255,255,255,0.08)"}`,
+                    boxShadow: isActive ? `0 0 20px ${agent.color}20` : "none",
+                    position: "relative", zIndex: 2
+                  }}
+                >
                   <img src={agent.img} alt={agent.name}
                     style={{
-                      width: 32, height: 32, objectFit: "contain",
-                      filter: isActive
-                        ? `drop-shadow(0 0 6px ${agent.color})`
-                        : "brightness(0.55) saturate(0.4)",
-                      transition: "filter 0.3s",
+                      width: 28, height: 28, objectFit: "contain",
+                      filter: isActive ? `drop-shadow(0 0 8px ${agent.color})` : "grayscale(0.8) brightness(0.6)",
+                      transition: "all 0.3s"
                     }}
                   />
-                </div>
-
-                {/* Pulse ring when active */}
-                {isActive && (
-                  <div className="relative flex items-center justify-center mb-1">
-                    <motion.div
-                      animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
-                      transition={{ duration: 1.8, repeat: Infinity }}
-                      className="absolute w-3 h-3 rounded-full"
-                      style={{ background: agent.color }}
+                  {isActive && (
+                    <motion.div 
+                      layoutId="active-glow"
+                      className="absolute inset-0 rounded-2xl"
+                      style={{ border: `2px solid ${agent.color}`, opacity: 0.5 }}
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity }}
                     />
-                    <div className="w-2 h-2 rounded-full" style={{ background: agent.color, position: "relative" }} />
-                  </div>
-                )}
-                {!isActive && (
-                  <div className="flex justify-center mb-1">
-                    <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
-                  </div>
-                )}
-
-                <div style={{ color: isActive ? agent.color : textFade, fontSize: 9, fontWeight: 800, letterSpacing: "0.08em" }}>
-                  {agent.name}
+                  )}
+                </div>
+                <div className="mt-2.5">
+                  <span style={{ 
+                    color: isActive ? agent.color : textFade, 
+                    fontSize: 8, fontWeight: 950, letterSpacing: "0.14em", textTransform: "uppercase" 
+                  }}>
+                    {agent.name.split(' ')[0]}
+                  </span>
                 </div>
               </motion.div>
             )
           })}
         </div>
 
-        {/* Active agent status */}
+        {/* Active Node Intelligence Detail */}
         <AnimatePresence mode="wait">
           <motion.div key={activeNode}
-            initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="rounded-xl p-3 mb-4 flex items-center gap-3"
-            style={{ background: `${AGENTS[activeNode].color}10`, border: `1px solid ${AGENTS[activeNode].color}25` }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
+            className="rounded-2xl p-4 mb-6 relative overflow-hidden"
+            style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${AGENTS[activeNode].color}30` }}
           >
-            <img src={AGENTS[activeNode].img} alt=""
-              style={{ width: 28, height: 28, objectFit: "contain", filter: `drop-shadow(0 0 4px ${AGENTS[activeNode].color})`, flexShrink: 0 }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <span style={{ color: AGENTS[activeNode].color, fontSize: 11, fontWeight: 700 }}>
-                  {AGENTS[activeNode].name} Agent
-                </span>
-                <span style={{ color: AGENTS[activeNode].color, fontSize: 9, fontWeight: 800,
-                  padding: "1px 6px", borderRadius: 4,
-                  background: `${AGENTS[activeNode].color}18`, border: `1px solid ${AGENTS[activeNode].color}30` }}>
-                  LIVE
-                </span>
-              </div>
-              <div style={{ color: textSub, fontSize: 11 }}>{AGENTS[activeNode].status}</div>
+            <div style={{ position: "absolute", top: 0, right: 0, padding: 8 }}>
+              <SignalIcon style={{ width: 14, height: 14, color: AGENTS[activeNode].color, opacity: 0.4 }} />
             </div>
-            <div style={{ color: AGENTS[activeNode].color, fontSize: 11, fontWeight: 700, flexShrink: 0, textAlign: "right" }}>
-              {AGENTS[activeNode].val}
+            
+            <div className="flex gap-4">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" 
+                style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${AGENTS[activeNode].color}50` }}>
+                <img src={AGENTS[activeNode].img} alt="" style={{ width: 34, height: 34, filter: `drop-shadow(0 0 10px ${AGENTS[activeNode].color})` }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span style={{ color: textOn, fontSize: 13, fontWeight: 900 }}>{AGENTS[activeNode].name}</span>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: AGENTS[activeNode].color, boxShadow: `0 0 8px ${AGENTS[activeNode].color}` }} />
+                </div>
+                <div className="truncate" style={{ color: textSub, fontSize: 11, fontWeight: 500 }}>{AGENTS[activeNode].status}</div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span style={{ color: textFade, fontSize: 9, fontWeight: 800, letterSpacing: "0.05em" }}>TELEMETRY.VAL</span>
+                  <span style={{ color: AGENTS[activeNode].color, fontSize: 12, fontWeight: 950, fontFamily: "monospace" }}>{AGENTS[activeNode].val}</span>
+                </div>
+              </div>
             </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Live feed ticker */}
-        <div className="rounded-xl overflow-hidden" style={{ background: surfaceMid, border: `1px solid ${border}` }}>
-          <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: `1px solid ${border}` }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: colors.success, animation: "agent-pulse 1.5s ease-in-out infinite" }} />
-            <span style={{ color: textFade, fontSize: 9, fontWeight: 800, letterSpacing: "0.1em" }}>LIVE AGENT FEED</span>
+        {/* Live System Log Ticker */}
+        <div className="rounded-2xl overflow-hidden border border-white/[0.05]" style={{ background: "rgba(0,0,0,0.2)" }}>
+          <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
+            <div className="flex items-center gap-2">
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22C55E" }} />
+              <span style={{ color: textFade, fontSize: 9, fontWeight: 900, letterSpacing: "0.15em" }}>SYSTEM_ENGINE.STREAM</span>
+            </div>
+            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: 8, fontFamily: "monospace" }}>SEC_LINK_08</span>
           </div>
-          <div style={{ padding: "10px 12px", height: 52, overflow: "hidden", position: "relative" }}>
+          <div style={{ padding: "14px 16px", height: 60, position: "relative", overflow: "hidden" }}>
             <AnimatePresence mode="wait">
               <motion.div key={feedIdx}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
-                style={{ position: "absolute", inset: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{
-                  padding: "2px 7px", borderRadius: 4, fontSize: 8, fontWeight: 800,
-                  letterSpacing: "0.1em", flexShrink: 0,
-                  background: current.color === "#EF4444" ? "rgba(239,68,68,0.2)" : `${current.color}18`,
+                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.3 }}
+                style={{ position: "absolute", inset: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <div style={{ 
+                  flexShrink: 0, padding: "2px 8px", borderRadius: 4, fontSize: 9, fontWeight: 900, 
+                  background: current.color === "#EF4444" ? "rgba(239,68,68,0.2)" : `${current.color}15`,
                   border: `1px solid ${current.color === "#EF4444" ? "rgba(239,68,68,0.4)" : `${current.color}30`}`,
-                  color: current.color === "#EF4444" ? "#FCA5A5" : current.color,
+                  color: current.color === "#EF4444" ? "#FCA5A5" : current.color 
                 }}>
                   {current.tag}
-                </span>
-                <span style={{ color: textSub, fontSize: 11, lineHeight: 1.4, flex: 1, minWidth: 0 }}>
-                  {current.msg}
-                </span>
+                </div>
+                <div style={{ color: textSub, fontSize: 11, lineHeight: 1.5, flex: 1, fontWeight: 500 }}>{current.msg}</div>
               </motion.div>
             </AnimatePresence>
+            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 40, background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.2))", pointerEvents: "none" }} />
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes agent-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50%       { opacity: 0.5; transform: scale(0.8); }
-        }
-      `}</style>
     </motion.div>
+  )
+}
+
+function SignalIcon(props) {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
   )
 }

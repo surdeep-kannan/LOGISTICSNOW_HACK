@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { colors, typography } from "../styles"
 import { roi as roiApi } from "../lib/api"
 
-const surface    = "#332B7A"
-const surfaceMid = "#3D3585"
+const surface    = "#453D9A"
+const surfaceMid = "#4F47AA"
 const border     = "rgba(255,255,255,0.1)"
 const textOn     = "rgba(255,255,255,0.95)"
 const textSub    = "rgba(255,255,255,0.65)"
@@ -45,10 +45,10 @@ const textFade   = "rgba(255,255,255,0.35)"
 // ─────────────────────────────────────────────────────────────────────────────
 
 // 1. FREIGHT COST SAVING — 5% (extremely conservative) to 12% (optimised)
-const FREIGHT_SAVING_MIN   = 0.04   // 4% floor
-const FREIGHT_SAVING_MAX   = 0.09   // 9% conservative ceiling
-const LABOUR_AUTOMATION   = 0.30   // 30% — Gartner / Capgemini floor
-const DELAY_REDUCTION_PCT = 0.40   // 40% — conservative benefit
+const FREIGHT_SAVING_MIN   = 0.02   // 2% floor (more conservative)
+const FREIGHT_SAVING_MAX   = 0.04   // 4% conservative ceiling (more conservative)
+const LABOUR_AUTOMATION   = 0.20   // 20% — Gartner / Capgemini floor (more conservative)
+const DELAY_REDUCTION_PCT = 0.20   // 20% — conservative benefit (more conservative)
 const AVG_DELAY_COST_INR  = 7500   // ₹7,500 per delayed shipment
 const HOURLY_LABOUR_INR   = 400    // ₹400/hr blended ops staff
 

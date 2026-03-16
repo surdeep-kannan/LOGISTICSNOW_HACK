@@ -6,7 +6,7 @@ const colors = {
   bgSurface: "#1A1744",
   bgSurfaceHover: "#201C52",
 
-  // Brand blues
+  // Brand blues (RESTORING ORIGINAL COLORS)
   primary: "#0077B6",
   primaryHover: "#1E3A5F",
   accent: "#00B4D8",
@@ -37,7 +37,7 @@ const colors = {
   error: "#EF4444",
   info: "#00B4D8",
 
-  // Gradients / glows (new)
+  // Gradients / glows
   gradientAccent: "linear-gradient(135deg, #0077B6 0%, #00B4D8 100%)",
   gradientSurface: "linear-gradient(180deg, #1A1744 0%, #0F0D2E 100%)",
   glowAccent: "0 0 24px rgba(0,180,216,0.25)",
