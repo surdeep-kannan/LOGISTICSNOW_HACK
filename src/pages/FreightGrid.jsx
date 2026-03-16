@@ -5,6 +5,7 @@ import {
   SignalIcon, XMarkIcon, BoltIcon, GlobeAsiaAustraliaIcon, MapPinIcon,
 } from "@heroicons/react/24/outline"
 import { colors, typography } from "../styles"
+import FreightGlobe from "./FreightGlobe"
 
 const surface    = "#332B7A"
 const surfaceMid = "#3D3585"
@@ -210,156 +211,45 @@ function laneTooltipHTML(lane, f, t) {
 }
 
 export default function FreightGrid({ embedded = false, embeddedHeight = "520px" }) {
-  const mapContainerRef = useRef(null)
-  const leafletRef      = useRef(null)
-  const mapRef          = useRef(null)
-  const linesRef        = useRef([])
-  const markersRef      = useRef([])
-
   const [activeHub,    setActiveHub]   = useState(null)
-  const [hubZoomed,    setHubZoomed]   = useState(false)
   const [tab,          setTab]         = useState("hubs")
-  const [search,      setSearch]      = useState("")
-  const [tickerIdx,   setTickerIdx]   = useState(0)
-  const [mapReady,    setMapReady]    = useState(false)
-  const [filterMode,  setFilterMode]  = useState("all")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [search,       setSearch]      = useState("")
+  const [tickerIdx,    setTickerIdx]   = useState(0)
+  const [filterMode,   setFilterMode]  = useState("all")
+  const [sidebarOpen,  setSidebarOpen] = useState(true)
 
+  // Cycle ticker
   useEffect(() => {
     const t = setInterval(() => setTickerIdx(i => (i + 1) % TICKER.length), 3400)
     return () => clearInterval(t)
   }, [])
 
-  useEffect(() => {
-    if (!document.getElementById("leaflet-css")) {
-      const link = document.createElement("link")
-      link.id = "leaflet-css"; link.rel = "stylesheet"
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      document.head.appendChild(link)
-    }
-    if (window.L) { leafletRef.current = window.L; initMap(); return }
-    if (document.getElementById("leaflet-js")) { return }
-    const s = document.createElement("script")
-    s.id = "leaflet-js"
-    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    s.onload = () => { leafletRef.current = window.L; initMap() }
-    document.head.appendChild(s)
-    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null } }
-  }, [])
-
-  const initMap = useCallback(() => {
-    if (!mapContainerRef.current || mapRef.current) return
-    const L = leafletRef.current
-    const map = L.map(mapContainerRef.current, {
-      center: [20, 15], zoom: embedded ? 2 : 3,
-      zoomControl: false, attributionControl: false, preferCanvas: true,
-      minZoom: 2, maxZoom: 12,
+  // When a hub is selected, switch to Lane tab automatically
+  const handleSetActiveHub = (idOrFn) => {
+    setActiveHub(prev => {
+      const next = typeof idOrFn === 'function' ? idOrFn(prev) : idOrFn
+      if (next) setTab('lane')
+      return next
     })
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", { maxZoom:18 }).addTo(map)
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png", { maxZoom:18, opacity:0.5 }).addTo(map)
-    L.control.zoom({ position:"bottomright" }).addTo(map)
-    mapRef.current = map
-    setMapReady(true)
-  }, [embedded])
+  }
 
-  useEffect(() => {
-    if (!mapReady) return
-    drawLanes(); drawMarkers()
-  }, [mapReady, activeHub, filterMode])
-
-  const getHub = (id) => HUBS.find(h => h.id === id)
-
+  // Filter HUBS and LANES by region
   const regionCheck = (hub) => {
     if (filterMode === "all") return true
-    if (filterMode === "india") return hub.region === "india"
-    if (filterMode === "china") return hub.region === "china"
-    if (filterMode === "europe") return hub.region === "europe"
-    if (filterMode === "usa") return hub.region === "usa"
-    return true
+    return hub.region === filterMode
   }
 
-  const drawLanes = () => {
-    const L = leafletRef.current; const map = mapRef.current
-    if (!L || !map) return
-    linesRef.current.forEach(l => l.remove())
-    linesRef.current = []
+  const filteredHubs  = HUBS.filter(h => regionCheck(h) && (!search || h.name.toLowerCase().includes(search.toLowerCase())))
+  const filteredLanes = LANES.filter(l => {
+    if (filterMode === 'all') return true
+    const f = HUBS.find(h => h.id === l.from)
+    const t = HUBS.find(h => h.id === l.to)
+    return regionCheck(f) || regionCheck(t)
+  })
+  const filteredRates  = RATES.filter(r => !search || r.route.toLowerCase().includes(search.toLowerCase()))
 
-    LANES.forEach(lane => {
-      const f = getHub(lane.from); const t = getHub(lane.to)
-      if (!f || !t) return
-      if (!regionCheck(f) && !regionCheck(t)) return
-
-      const highlighted = activeHub && (lane.from === activeHub || lane.to === activeHub)
-      const dimmed      = activeHub && !highlighted
-      const weight  = dimmed ? 0.3 : highlighted ? Math.max(2, lane.vol / 800) : Math.max(0.6, lane.vol / 1600)
-      const opacity = dimmed ? 0.05 : highlighted ? 0.92 : 0.35
-
-      const arcLat = (f.lat + t.lat) / 2 - Math.abs(f.lng - t.lng) * 0.04
-      const arcLng = (f.lng + t.lng) / 2
-
-      const polyline = L.polyline([[f.lat,f.lng],[arcLat,arcLng],[t.lat,t.lng]], {
-        color: lane.color, weight, opacity, smoothFactor:3, lineCap:"round", lineJoin:"round",
-      })
-      polyline.on("mouseover", (e) => {
-        polyline.setStyle({ weight: weight + 2, opacity: 1 })
-        L.popup({ className:"lorri-popup", closeButton:false, autoPan:false, offset:[0,-4] })
-          .setLatLng(e.latlng).setContent(laneTooltipHTML(lane, f, t)).openOn(map)
-      })
-      polyline.on("mouseout", () => { polyline.setStyle({ weight, opacity }); map.closePopup() })
-      polyline.on("click", () => setActiveHub(prev => (prev === f.id || prev === t.id) ? null : f.id))
-      polyline.addTo(map)
-      linesRef.current.push(polyline)
-    })
-  }
-
-  const drawMarkers = () => {
-    const L = leafletRef.current; const map = mapRef.current
-    if (!L || !map) return
-    markersRef.current.forEach(m => m.remove())
-    markersRef.current = []
-
-    HUBS.forEach(hub => {
-      const isActive = hub.id === activeHub
-      const sc   = STATUS_COLOR[hub.status] || "#22C55E"
-      const size = isActive ? 16 : hub.routes > 5000 ? 12 : hub.routes > 2000 ? 9 : 6
-
-      const icon = L.divIcon({
-        className: "",
-        html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${sc};border:${isActive?"2.5px solid #fff":`1.5px solid ${sc}90`};box-shadow:${isActive?`0 0 18px ${sc},0 0 36px ${sc}60`:`0 0 6px ${sc}70`};cursor:pointer;position:relative">${isActive?`<div style="position:absolute;top:-7px;left:-7px;right:-7px;bottom:-7px;border-radius:50%;border:1.5px solid ${sc}60;animation:hubRing 1.8s ease-in-out infinite"></div>`:""}</div>`,
-        iconSize:[size,size], iconAnchor:[size/2,size/2],
-      })
-      const marker = L.marker([hub.lat, hub.lng], { icon, zIndexOffset: isActive ? 1000 : 0 })
-      marker.on("click", () => setActiveHub(prev => prev === hub.id ? null : hub.id))
-      marker.on("mouseover", () => {
-        L.popup({ className:"lorri-popup", closeButton:false, autoPan:false, offset:[0,-size/2-2] })
-          .setLatLng([hub.lat, hub.lng]).setContent(hubTooltipHTML(hub)).openOn(map)
-      })
-      marker.on("mouseout", () => map.closePopup())
-      marker.addTo(map)
-      markersRef.current.push(marker)
-    })
-  }
-
-  // When hub changes, zoom map to it
-  useEffect(() => {
-    if (!mapReady || !mapRef.current) return
-    const map = mapRef.current
-    if (activeHub) {
-      const hub = HUBS.find(h => h.id === activeHub)
-      if (hub) {
-        map.flyTo([hub.lat, hub.lng], embedded ? 4 : 5, { duration: 0.8 })
-        setHubZoomed(true)
-        setTab("lane")
-      }
-    } else {
-      map.flyTo([20, 15], embedded ? 2 : 3, { duration: 0.8 })
-      setHubZoomed(false)
-    }
-  }, [activeHub, mapReady, embedded])
   const activeHubData  = activeHub ? HUBS.find(h => h.id === activeHub) : null
   const activeHubLanes = activeHub ? LANES.filter(l => l.from === activeHub || l.to === activeHub) : []
-  const filteredHubs   = HUBS.filter(h => !search || h.name.toLowerCase().includes(search.toLowerCase()))
-  const filteredRates  = RATES.filter(r => !search || r.route.toLowerCase().includes(search.toLowerCase()))
 
   const height = embedded ? embeddedHeight : "calc(100vh - 60px)"
 
@@ -381,6 +271,17 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
         .hub-row:hover{background:${surfaceMid}!important}
         .rate-row:hover{background:rgba(255,255,255,0.04)!important}
         .lane-row-s:hover{background:${surfaceMid}!important}
+        @media (max-width: 768px) {
+          .lorri-sidebar {
+            position: absolute !important;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            height: 100%;
+            z-index: 100 !important;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+          }
+        }
       `}</style>
 
       {/* TOP BAR */}
@@ -459,20 +360,21 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
 
       {/* BODY */}
       <div style={{ flex:1, display:"flex", overflow:"hidden", position:"relative" }}>
-        {/* MAP */}
-        <div ref={mapContainerRef} style={{ flex:1, position:"relative" }}>
-          {!mapReady && (
-            <div style={{ position:"absolute", inset:0, background:bg, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:10, zIndex:20 }}>
-              <div style={{ width:28, height:28, border:`2px solid ${border}`, borderTopColor:colors.accent, borderRadius:"50%", animation:"spin .75s linear infinite" }}/>
-              <span style={{ color:textFade, fontSize:12 }}>Loading freight grid…</span>
-            </div>
-          )}
+        {/* GLOBE — filtered lanes + filterMode passed */}
+        <div style={{ flex:1, position:"relative", zIndex:0 }}>
+          <FreightGlobe
+            hubs={filterMode === 'all' ? HUBS : HUBS.filter(h => h.region === filterMode)}
+            lanes={filteredLanes}
+            activeHub={activeHub}
+            setActiveHub={handleSetActiveHub}
+          />
         </div>
 
         {/* SIDEBAR */}
         <AnimatePresence>
           {sidebarOpen && (
             <motion.aside key="sidebar"
+              className="lorri-sidebar"
               initial={{ x:280, opacity:0 }} animate={{ x:0, opacity:1 }} exit={{ x:280, opacity:0 }}
               transition={{ type:"tween", duration:.18 }}
               style={{ width:270, background:surface, borderLeft:`1px solid ${border}`, display:"flex", flexDirection:"column", overflow:"hidden", flexShrink:0, zIndex:20 }}>
@@ -499,7 +401,7 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
                     const sc = STATUS_COLOR[hub.status]; const isActive = hub.id === activeHub
                     return (
                       <div key={hub.id} className="hub-row"
-                        onClick={() => setActiveHub(p => p===hub.id ? null : hub.id)}
+                        onClick={() => handleSetActiveHub(p => p===hub.id ? null : hub.id)}
                         style={{ padding:"7px 8px", borderRadius:8, marginBottom:3, display:"flex", alignItems:"center", gap:7, cursor:"pointer", transition:"background .15s",
                           background: isActive ? surfaceMid : "transparent", border:`1px solid ${isActive ? borderHi : "transparent"}` }}>
                         <div style={{ width:7, height:7, borderRadius:"50%", background:sc, flexShrink:0, boxShadow:`0 0 4px ${sc}80` }}/>
