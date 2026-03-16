@@ -3,7 +3,7 @@ import Globe from 'react-globe.gl';
 
 const STATUS_COLOR = { normal: '#22C55E', moderate: '#F59E0B', high: '#EF4444' };
 
-export default function FreightGlobe({ hubs = [], lanes = [], activeHub, setActiveHub }) {
+export default function FreightGlobe({ hubs = [], lanes = [], activeHub, setActiveHub, filterMode = 'all' }) {
   const globeRef = useRef();
   const boxRef   = useRef();
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -28,53 +28,79 @@ export default function FreightGlobe({ hubs = [], lanes = [], activeHub, setActi
     const g = globeRef.current;
     if (!g) return;
     const ctrl = g.controls();
-    ctrl.autoRotate      = false;   // disabled – reduces GPU load significantly
+    ctrl.autoRotate      = false;
     ctrl.enablePan       = false;
     ctrl.enableZoom      = true;
-    ctrl.minDistance     = 200;
-    ctrl.maxDistance     = 480;
-    g.pointOfView({ lat: 20, lng: 15, altitude: 2.5 });
+    ctrl.minDistance     = 150;
+    ctrl.maxDistance     = 600;
   }, []);
 
-  // Fly to selected hub
+  // Fly to selected hub OR region
   useEffect(() => {
     if (!ready) return;
     const g = globeRef.current;
     if (!g) return;
+
     if (activeHub) {
       const hub = hubs.find(h => h.id === activeHub);
       if (hub) {
-        g.pointOfView({ lat: hub.lat, lng: hub.lng, altitude: 1.8 }, 900);
-        g.controls().autoRotate = false;
+        g.pointOfView({ lat: hub.lat, lng: hub.lng, altitude: 0.6 }, 1000);
+        return;
       }
-    } else {
-      g.pointOfView({ lat: 20, lng: 15, altitude: 2.5 }, 900);
     }
-  }, [activeHub, hubs, ready]);
 
-  // ALL lanes, flat on the globe (altitude 0 = surface-hugging like the reference)
+    // Region focus
+    const regions = {
+      india:  { lat: 21, lng: 78, altitude: 0.8 },
+      china:  { lat: 35, lng: 105, altitude: 0.9 },
+      usa:    { lat: 38, lng: -98, altitude: 1.1 },
+      europe: { lat: 50, lng: 15, altitude: 0.8 },
+      all:    { lat: 20, lng: 15, altitude: 2.5 }
+    };
+
+    const target = regions[filterMode] || regions.all;
+    g.pointOfView(target, 1200);
+
+  }, [activeHub, filterMode, hubs, ready]);
+
+  // ── Smart Connection Density ──────────────────
   const arcsData = useMemo(() => {
     if (!hubs.length || !lanes.length) return [];
+
+    // Define "Major" lanes for the World view (cleaner look)
+    const MAJOR_LANES = [
+      'delhi-mumbai', 'jnpt-dubai', 'jnpt-singapore', 'shanghai-rotterdam',
+      'shanghai-la', 'la-newyork', 'newyork-london', 'rotterdam-newyork',
+      'tokyo-singapore', 'dubai-rotterdam', 'la-tokyo', 'mumbai-dubai'
+    ];
+
     return lanes.map(lane => {
       const f = hubs.find(h => h.id === lane.from);
       const t = hubs.find(h => h.id === lane.to);
       if (!f || !t) return null;
+
+      const laneKey = `${lane.from}-${lane.to}`;
+      const isMajor = MAJOR_LANES.includes(laneKey) || MAJOR_LANES.includes(`${lane.to}-${lane.from}`);
+
+      // If in World view, skip non-major lanes unless activeHub is involved
+      if (filterMode === 'all' && !isMajor && !activeHub) return null;
+
       const hi = activeHub && (lane.from === activeHub || lane.to === activeHub);
       const dim = activeHub && !hi;
+
       return {
         ...lane,
         startLat: f.lat, startLng: f.lng,
         endLat:   t.lat, endLng:   t.lng,
         fromName: f.name, toName: t.name,
-        // Flat on surface
         altitude:  0,
-        arcColor:  dim ? 'rgba(100,160,255,0.05)'
+        arcColor:  dim ? 'rgba(100,160,255,0.03)'
                        : hi  ? 'rgba(0,210,255,1)'
-                             : 'rgba(100,180,255,0.4)',
-        arcStroke: hi ? 1.4 : dim ? 0.1 : 0.45,
+                             : 'rgba(100,180,255,0.35)',
+        arcStroke: hi ? 1.5 : dim ? 0.05 : 0.4,
       };
     }).filter(Boolean);
-  }, [hubs, lanes, activeHub]);
+  }, [hubs, lanes, activeHub, filterMode]);
 
   // Hub dots
   const pointsData = useMemo(() => {

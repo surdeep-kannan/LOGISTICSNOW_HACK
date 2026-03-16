@@ -367,6 +367,7 @@ export default function FreightGrid({ embedded = false, embeddedHeight = "520px"
             lanes={filteredLanes}
             activeHub={activeHub}
             setActiveHub={handleSetActiveHub}
+            filterMode={filterMode}
           />
         </div>
 

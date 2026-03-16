@@ -15,12 +15,35 @@ import warningImg     from "../assets/warning.png"
 import radarAnim      from "../assets/radar.json"
 import Lottie         from "lottie-react"
 
-const surface    = "#332B7A"
-const surfaceMid = "#3D3585"
-const border     = "rgba(255,255,255,0.1)"
-const textOn     = "rgba(255,255,255,0.95)"
-const textSub    = "rgba(255,255,255,0.65)"
-const textFade   = "rgba(255,255,255,0.35)"
+const surface    = "rgba(51, 43, 122, 0.6)"
+const surfaceMid = "rgba(61, 53, 133, 0.85)"
+const border     = "rgba(255,255,255,0.12)"
+const textOn     = "rgba(255,255,255,1)"
+const textSub    = "rgba(255,255,255,0.7)"
+const textFade   = "rgba(255,255,255,0.4)"
+
+function FloatingObjects() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+      {[...Array(12)].map((_, i) => (
+        <motion.div key={i}
+          initial={{ x: Math.random() * 800, y: Math.random() * 500, opacity: 0 }}
+          animate={{ 
+            x: [null, Math.random() * 800, Math.random() * 800], 
+            y: [null, Math.random() * 500, Math.random() * 500],
+            opacity: [0, 0.8, 0]
+          }}
+          transition={{ duration: 10 + i * 2, repeat: Infinity, ease: "linear" }}
+          style={{ 
+            position: "absolute", width: 2 + i % 4, height: 2 + i % 4, 
+            borderRadius: "50%", background: "#00B4D8", filter: "blur(1px)" 
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+const primaryAccent = "#00B4D8"
 
 // ── Agent definitions ─────────────────────────────────────
 const AGENTS = [
@@ -149,92 +172,96 @@ const CONNS = [
   { from: "optimization",   to: "sustainability", id: "c6" },
 ]
 
-function curvePath(from, to) {
-  const f = POS[from], t = POS[to]
-  const mx = (f.x + t.x) / 2
-  const my = (f.y + t.y) / 2
-  const cx = mx * 0.5 + CX * 0.5
-  const cy = my * 0.5 + CY * 0.5
+function curvePath(fromId, toId) {
+  const f = POS[fromId]
+  const t = POS[toId]
+  const cx = CX
+  const cy = CY
   return `M ${f.x} ${f.y} Q ${cx} ${cy} ${t.x} ${t.y}`
 }
 
-function PulseDot({ pathId, color, delay, dur = 3 }) {
+function ConnectionLine({ conn, activeAgent }) {
+  const isActive = activeAgent === conn.from || activeAgent === conn.to
+  const target = AGENTS.find(a => a.id === conn.to)
   return (
-    <circle r="4.5" fill={color} opacity="0">
-      <animateMotion dur={`${dur}s`} begin={`${delay}s`} repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1">
-        <mpath href={`#${pathId}`} />
-      </animateMotion>
-      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur={`${dur}s`} begin={`${delay}s`} repeatCount="indefinite" />
-      <animate attributeName="r" values="3;5.5;3" dur={`${dur}s`} begin={`${delay}s`} repeatCount="indefinite" />
-    </circle>
+    <g>
+      <path d={curvePath(conn.from, conn.to)} fill="none"
+        stroke={isActive ? target.color : "rgba(255,255,255,0.08)"}
+        strokeWidth={isActive ? 1.5 : 0.8}
+        strokeDasharray={isActive ? "none" : "4 8"}
+        style={{ transition: "stroke 0.4s, stroke-width 0.4s" }}
+      />
+      {isActive && (
+        <path d={curvePath(conn.from, conn.to)} fill="none"
+          stroke={target.color} strokeWidth="1.5" strokeDasharray="160 500" strokeDashoffset="0"
+          opacity="0.8">
+          <animate attributeName="stroke-dashoffset" from="660" to="0" dur="4s" repeatCount="indefinite" />
+        </path>
+      )}
+    </g>
   )
 }
 
+// Removed PulseDot component to eliminate animation lag
+
 function AgentNode({ agent, isActive, dimmed, onClick }) {
   const pos = POS[agent.id]
-  const opacity = dimmed ? 0.22 : 1
+  const opacity = dimmed ? 0.35 : 1
   return (
-    <g style={{ cursor: "pointer", transition: "opacity 0.35s" }} opacity={opacity} onClick={onClick}>
-      {isActive && (
-        <circle cx={pos.x} cy={pos.y} r={R + 18} fill="none"
-          stroke={agent.color} strokeWidth="1" strokeDasharray="5 7" opacity="0.55">
-          <animateTransform attributeName="transform" type="rotate"
-            from={`0 ${pos.x} ${pos.y}`} to={`360 ${pos.x} ${pos.y}`}
-            dur="7s" repeatCount="indefinite" />
-        </circle>
-      )}
+    <g style={{ cursor: "pointer", transition: "all 0.4s cubic-bezier(0.23, 1, 0.32, 1)" }} opacity={opacity} onClick={onClick}>
+      {/* Outer focus rings */}
       {isActive && (
         <>
-          <circle cx={pos.x} cy={pos.y} r={R} fill="none" stroke={agent.color} strokeWidth="1.5" opacity="0">
-            <animate attributeName="r" values={`${R};${R + 28}`} dur="2.2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.7;0" dur="2.2s" repeatCount="indefinite" />
-          </circle>
-          <circle cx={pos.x} cy={pos.y} r={R} fill="none" stroke={agent.color} strokeWidth="0.8" opacity="0">
-            <animate attributeName="r" values={`${R};${R + 44}`} dur="2.2s" begin="0.8s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.4;0" dur="2.2s" begin="0.8s" repeatCount="indefinite" />
-          </circle>
+          <circle cx={pos.x} cy={pos.y} r={R + 24} fill="none"
+            stroke={agent.color} strokeWidth="0.8" strokeDasharray="4 6" opacity="0.3" />
+          <circle cx={pos.x} cy={pos.y} r={R + 12} fill="none"
+            stroke={agent.color} strokeWidth="1.2" opacity="0.2" />
         </>
       )}
+      
+      {/* Node Shadow / Glow */}
+      <defs>
+        <radialGradient id={`glow-${agent.id}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={agent.color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={agent.color} stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx={pos.x} cy={pos.y} r={R + 30} fill={`url(#glow-${agent.id})`} opacity={isActive ? 1 : 0.4} />
+
+      {/* Main Glass Circle */}
       <circle cx={pos.x} cy={pos.y} r={R}
-        fill={isActive ? `${agent.color}22` : surfaceMid}
-        stroke={agent.color} strokeWidth={isActive ? 2 : 1}
-        opacity={isActive ? 1 : 0.7}
-        style={{ transition: "all 0.35s" }}
+        fill={isActive ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)"}
+        stroke={isActive ? agent.color : "rgba(255,255,255,0.1)"} 
+        strokeWidth={isActive ? 3 : 1.5}
+        style={{ transition: "all 0.4s" }}
       />
-      <circle cx={pos.x} cy={pos.y} r={R - 8} fill="none"
-        stroke={agent.color} strokeWidth="0.5" opacity={isActive ? 0.4 : 0.15}
-        style={{ transition: "opacity 0.35s" }}
+      
+      {/* Inner decorative circle */}
+      <circle cx={pos.x} cy={pos.y} r={R - 10} fill="none"
+        stroke={agent.color} strokeWidth="0.5" opacity={isActive ? 0.6 : 0.1}
       />
+
       <foreignObject
-        x={pos.x - agent.imgSize / 2} y={pos.y - agent.imgSize / 2 - 8}
+        x={pos.x - agent.imgSize / 2} y={pos.y - agent.imgSize / 2 - 6}
         width={agent.imgSize} height={agent.imgSize}
         style={{ pointerEvents: "none" }}>
         <img src={agent.img} alt={agent.name} style={{
           width: agent.imgSize, height: agent.imgSize, objectFit: "contain",
-          filter: isActive ? `drop-shadow(0 0 8px ${agent.color})` : "brightness(0.65) saturate(0.5)",
-          transition: "filter 0.35s",
+          filter: isActive ? `drop-shadow(0 0 12px ${agent.color})` : "grayscale(0.6) brightness(0.7)",
+          transform: isActive ? "scale(1.1) translateY(-2px)" : "scale(1)",
+          transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
         }} />
       </foreignObject>
-      <text x={pos.x} y={pos.y + agent.imgSize / 2 - 2}
-        textAnchor="middle" fontSize="9" fontWeight="800" letterSpacing="0.12em"
-        fill={isActive ? agent.color : "rgba(255,255,255,0.35)"}
-        style={{ transition: "fill 0.35s", pointerEvents: "none" }}>
+
+      <text x={pos.x} y={pos.y + agent.imgSize / 2 + 10}
+        textAnchor="middle" fontSize="11" fontWeight="1000" letterSpacing="0.18em"
+        fill={isActive ? agent.color : "rgba(255,255,255,0.3)"}
+        style={{ transition: "all 0.4s", pointerEvents: "none", textShadow: isActive ? `0 0 12px ${agent.color}` : "none" }}>
         {agent.short}
       </text>
-      {(() => {
-        const isLeft = pos.x < CX
-        const isTop  = pos.y < CY
-        const lx = isLeft ? pos.x - R - 14 : pos.x + R + 14
-        const ly = isTop  ? pos.y - R - 18  : pos.y + R + 22
-        return (
-          <text x={lx} y={ly} textAnchor={isLeft ? "end" : "start"}
-            fontSize="11" fontWeight="600"
-            fill={isActive ? agent.color : "rgba(255,255,255,0.38)"}
-            style={{ transition: "fill 0.35s", pointerEvents: "none" }}>
-            {agent.name}
-          </text>
-        )
-      })()}
+
+      {/* Connection terminal dots */}
+      <circle cx={pos.x} cy={pos.y} r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="1 10" />
     </g>
   )
 }
@@ -244,23 +271,22 @@ function CenterHub({ activeAgent }) {
   return (
     <g>
       <circle cx={CX} cy={CY} r={52} fill="none"
-        stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="4 8">
-        <animateTransform attributeName="transform" type="rotate"
-          from={`0 ${CX} ${CY}`} to={`-360 ${CX} ${CY}`} dur="22s" repeatCount="indefinite" />
-      </circle>
+        stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="4 8" />
       <circle cx={CX} cy={CY} r={40} fill="#1E1856"
         stroke={active ? active.color : "rgba(255,255,255,0.12)"}
         strokeWidth="1.5" style={{ transition: "stroke 0.4s" }} />
       <circle cx={CX} cy={CY} r={33} fill="none"
         stroke={active ? active.color : "rgba(255,255,255,0.05)"}
         strokeWidth="0.5" style={{ transition: "stroke 0.4s" }} />
-      <foreignObject x={CX - 26} y={CY - 26} width={52} height={52} style={{ pointerEvents: "none" }}>
+      <foreignObject x={CX - 28} y={CY - 28} width={56} height={56} style={{ pointerEvents: "none" }}>
         <img src={lorriLogo} alt="LoRRI" style={{
-          width: 52, height: 52, objectFit: "contain",
+          width: 56, height: 56, objectFit: "contain",
           filter: active
-            ? `drop-shadow(0 0 6px ${active.color}) brightness(1.1)`
-            : "brightness(0.65) saturate(0.5)",
-          transition: "filter 0.4s",
+            ? `drop-shadow(0 0 8px ${active.color}) brightness(1.2)`
+            : "brightness(0.7) saturate(0.6)",
+          transition: "all 0.4s",
+          transform: active ? "scale(1.08)" : "scale(1)",
+          animation: active ? "center-breathe 2.5s ease-in-out infinite" : "none"
         }} />
       </foreignObject>
     </g>
@@ -496,15 +522,25 @@ export default function AgentArchitecture() {
           { label: "Shipments rerouting",val: "340+",                               color: "#EF4444", img: shipMoving   },
           { label: "Ports in crisis",    val: "2 CRITICAL",                         color: "#F59E0B", img: warningImg   },
         ].map(s => (
-          <div key={s.label} className="p-4 rounded-xl"
-            style={{ background: surface, border: `1px solid ${s.color === "#EF4444" ? "rgba(239,68,68,0.3)" : border}` }}>
-            <div className="flex items-center gap-3 mb-3">
-              <img src={s.img} alt="" style={{ width: 22, height: 22, objectFit: "contain", filter: `drop-shadow(0 0 4px ${s.color})` }} />
-              <div style={{ color: textFade, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <div key={s.label} className="p-5 rounded-2xl relative overflow-hidden group transition-all hover:scale-[1.02]"
+            style={{ 
+              background: "rgba(255,255,255,0.03)", 
+              backdropFilter: "blur(12px)",
+              border: `1px solid ${s.color === "#EF4444" ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)"}`,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+            }}>
+            {/* Background Glow */}
+            <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "50%", height: "50%", background: s.color, filter: "blur(40px)", opacity: 0.1, pointerEvents: "none" }} />
+            
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${s.color}15`, border: `1px solid ${s.color}30` }}>
+                <img src={s.img} alt="" style={{ width: 22, height: 22, objectFit: "contain", filter: `drop-shadow(0 0 4px ${s.color})` }} />
+              </div>
+              <div style={{ color: textFade, fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 {s.label}
               </div>
             </div>
-            <div style={{ color: s.color, fontSize: 20, fontWeight: 900, letterSpacing: "-0.02em" }}>{s.val}</div>
+            <div style={{ color: s.color, fontSize: 24, fontWeight: 950, letterSpacing: "-0.03em" }}>{s.val}</div>
           </div>
         ))}
       </div>
@@ -512,10 +548,41 @@ export default function AgentArchitecture() {
       {/* ── Main layout ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
 
-        {/* ── SVG diagram — Col span 2 ── */}
+        {/* SVG diagram — Col span 2 ── */}
         <div className="xl:col-span-2 rounded-2xl overflow-hidden relative"
-          style={{ background: "radial-gradient(ellipse at 40% 40%, #2A2070 0%, #140E3A 100%)", border: `1px solid ${border}` }}>
-          <svg width="100%" viewBox={`-100 -40 ${SVG_W + 200} ${SVG_H + 80}`} style={{ display: "block" }}>
+          style={{ 
+            background: "radial-gradient(circle at 50% 50%, #1A1440 0%, #0F092A 100%)", 
+            border: `1px solid ${border}`,
+            boxShadow: "inset 0 0 100px rgba(0,0,0,0.8)",
+            minHeight: "520px"
+          }}>
+          
+          <FloatingObjects />
+
+          {/* Scanline Effect */}
+          <div style={{
+            position: "absolute", inset: 0, 
+            background: "linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))",
+            backgroundSize: "100% 3px, 3px 100%", pointerEvents: "none", zIndex: 10, opacity: 0.3
+          }} />
+
+          {/* Subtle Radar/Grid background Pattern */}
+          <div style={{ position: "absolute", inset: 0, opacity: 0.2, pointerEvents: "none" }}>
+            <svg width="100%" height="100%">
+               <pattern id="radarGrid" width="80" height="80" patternUnits="userSpaceOnUse">
+                 <circle cx="40" cy="40" r="1.5" fill="#00B4D8" opacity="0.4" />
+                 <path d="M 80 40 L 0 40 M 40 0 L 40 80" stroke="rgba(0,180,216,0.15)" strokeWidth="0.5" />
+               </pattern>
+               <rect width="100%" height="100%" fill="url(#radarGrid)" />
+
+               {/* Large concentric rings */}
+               <motion.circle cx="50%" cy="50%" r="160" fill="none" stroke="rgba(0,180,216,0.08)" strokeWidth="1" animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 4, repeat: Infinity }} />
+               <motion.circle cx="50%" cy="50%" r="280" fill="none" stroke="rgba(0,180,216,0.05)" strokeWidth="1" animate={{ opacity: [0.1, 0.3, 0.1] }} transition={{ duration: 6, repeat: Infinity }} />
+               <motion.circle cx="50%" cy="50%" r="400" fill="none" stroke="rgba(0,180,216,0.03)" strokeWidth="1" />
+            </svg>
+          </div>
+
+          <svg width="100%" viewBox={`-40 0 ${SVG_W + 80} ${SVG_H}`} style={{ display: "block", position: "relative", zIndex: 5 }}>
             <defs>
               {CONNS.map(c => (
                 <path key={c.id} id={c.id} d={curvePath(c.from, c.to)} fill="none" />
@@ -544,13 +611,7 @@ export default function AgentArchitecture() {
               )
             })}
 
-            {/* Pulse dots */}
-            <PulseDot pathId="c1" color="#00B4D8" delay={0}   dur={3.4} />
-            <PulseDot pathId="c2" color="#8B5CF6" delay={0.7} dur={3.1} />
-            <PulseDot pathId="c3" color="#22C55E" delay={1.4} dur={2.9} />
-            <PulseDot pathId="c4" color="#F59E0B" delay={2.1} dur={3.6} />
-            <PulseDot pathId="c5" color="#EF4444" delay={0.3} dur={2.4} />
-            <PulseDot pathId="c6" color="#8B5CF6" delay={1.0} dur={3.8} />
+            {/* Static lines replace the animated flowing dots */}
 
             <CenterHub activeAgent={activeAgent} />
 
@@ -582,23 +643,27 @@ export default function AgentArchitecture() {
           <AnimatePresence mode="wait">
             {selected ? (
               <motion.div key={selected.id}
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.22 }}
+                initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
                 className="rounded-2xl overflow-hidden"
-                style={{ background: surface, border: `1px solid ${selected.color}45`, boxShadow: `0 0 40px ${selected.dimGlow}` }}>
-                <div style={{
-                  padding: "18px 20px",
-                  background: `linear-gradient(135deg, ${selected.color}14 0%, transparent 70%)`,
-                  borderBottom: `1px solid ${border}`,
-                  display: "flex", alignItems: "center", gap: 14,
+                style={{ 
+                  background: "rgba(255,255,255,0.03)", 
+                  backdropFilter: "blur(16px)",
+                  border: `1px solid ${selected.color}45`, 
+                  boxShadow: `0 20px 50px rgba(0,0,0,0.3), 0 0 40px ${selected.dimGlow}` 
                 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, flexShrink: 0, background: selected.tagBg, border: `1px solid ${selected.tagBdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{
+                  padding: "20px",
+                  background: `linear-gradient(145deg, ${selected.color}20 0%, transparent 80%)`,
+                  borderBottom: `1px solid ${border}`,
+                  display: "flex", alignItems: "center", gap: 16,
+                }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, flexShrink: 0, background: selected.tagBg, border: `1px solid ${selected.tagBdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <img src={selected.img} alt={selected.name} style={{ width: 36, height: 36, objectFit: "contain", filter: `drop-shadow(0 0 6px ${selected.color})` }} />
                   </div>
                   <div>
-                    <div style={{ color: textOn, fontWeight: 800, fontSize: 15, marginBottom: 5 }}>{selected.name}</div>
+                    <div style={{ color: textOn, fontWeight: 900, fontSize: 17, marginBottom: 4 }}>{selected.name}</div>
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md"
-                      style={{ background: selected.tagBg, border: `1px solid ${selected.tagBdr}`, color: selected.color, fontSize: 9, fontWeight: 800, letterSpacing: "0.1em" }}>
+                      style={{ background: selected.tagBg, border: `1px solid ${selected.tagBdr}`, color: selected.color, fontSize: 9, fontWeight: 900, letterSpacing: "0.1em" }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: selected.color, animation: "arch-pulse 1.5s ease-in-out infinite" }} />
                       AGENT ACTIVE
                     </div>
@@ -619,9 +684,10 @@ export default function AgentArchitecture() {
                   <div style={{ color: textFade, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Active tasks</div>
                   {selected.tasks.map((task, i) => (
                     <motion.div key={task} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
-                      className="flex items-center gap-3 mb-3">
+                      className="flex items-center gap-3 p-2 rounded-lg border border-transparent hover:border-white/5 hover:bg-white/5 transition-all mb-1 group">
                       <div className="w-1.5 h-1.5 rounded-full" style={{ background: selected.color, flexShrink: 0, boxShadow: `0 0 5px ${selected.color}` }} />
-                      <span style={{ color: textSub, fontSize: 13 }}>{task}</span>
+                      <span style={{ color: textSub, fontSize: 13, fontWeight: 500 }}>{task}</span>
+                      <span className="ml-auto opacity-0 group-hover:opacity-100 text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10" style={{ color: textFade }}>RUNNING</span>
                     </motion.div>
                   ))}
                 </div>
@@ -705,15 +771,16 @@ export default function AgentArchitecture() {
             <motion.button key={agent.id}
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
               onClick={() => handleClick(agent.id)}
-              className="p-4 rounded-xl text-left transition-all"
+              className="p-5 rounded-2xl text-left transition-all hover:translate-y-[-4px]"
               style={{
-                background: activeAgent === agent.id ? `linear-gradient(135deg, ${agent.color}16 0%, transparent 100%)` : surface,
+                background: activeAgent === agent.id ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
+                backdropFilter: "blur(10px)",
                 border: `1.5px solid ${activeAgent === agent.id ? agent.color : border}`,
-                boxShadow: activeAgent === agent.id ? `0 0 24px ${agent.dimGlow}` : "none",
+                boxShadow: activeAgent === agent.id ? `0 15px 35px rgba(0,0,0,0.3), 0 0 20px ${agent.dimGlow}` : "none",
               }}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: agent.tagBg, border: `1px solid ${agent.tagBdr}` }}>
-                  <img src={agent.img} alt={agent.name} style={{ width: 26, height: 26, objectFit: "contain",
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: agent.tagBg, border: `1px solid ${agent.tagBdr}` }}>
+                  <img src={agent.img} alt={agent.name} style={{ width: 28, height: 28, objectFit: "contain",
                     filter: activeAgent === agent.id ? `drop-shadow(0 0 4px ${agent.color})` : "none" }} />
                 </div>
                 <div className="min-w-0">
@@ -733,6 +800,10 @@ export default function AgentArchitecture() {
         @keyframes arch-pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50%       { opacity: 0.5; transform: scale(0.8); }
+        }
+        @keyframes center-breathe {
+          0%, 100% { filter: brightness(1.2) drop-shadow(0 0 8px currentColor); transform: scale(1.08); }
+          50%       { filter: brightness(1.4) drop-shadow(0 0 15px currentColor); transform: scale(1.15); }
         }
       `}</style>
     </div>
