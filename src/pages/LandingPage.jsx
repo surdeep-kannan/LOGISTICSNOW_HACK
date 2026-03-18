@@ -180,7 +180,8 @@ function Navbar({ onLogin, onSignup, onDemo }) {
         <div className="hidden sm:flex" style={{ alignItems: "center", gap: 6 }}>
           {NAV_LINKS.map(l => (
             <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
-              style={{ color: C.textMid, fontSize: 13, textDecoration: "none", padding: "5px 12px", borderRadius: 7, transition: "color 0.15s" }}
+              onClick={e => { e.preventDefault(); document.getElementById(l.toLowerCase().replace(/ /g, "-"))?.scrollIntoView({ behavior: "smooth" }) }}
+              style={{ color: C.textMid, fontSize: 13, textDecoration: "none", padding: "5px 12px", borderRadius: 7, transition: "color 0.15s", cursor: "pointer" }}
               onMouseEnter={e => e.target.style.color = C.textHi}
               onMouseLeave={e => e.target.style.color = C.textMid}>{l}</a>
           ))}
@@ -234,9 +235,9 @@ function Navbar({ onLogin, onSignup, onDemo }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 32, flex: 1, justifyContent: "center", paddingLeft: 10, position: "relative", zIndex: 1 }}>
               {NAV_LINKS.map((l, i) => (
                 <motion.a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={e => { e.preventDefault(); setMobileOpen(false); setTimeout(() => document.getElementById(l.toLowerCase().replace(/ /g, "-"))?.scrollIntoView({ behavior: "smooth" }), 300) }}
                   initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05, duration: 0.4, ease: "easeOut" }}
-                  style={{ color: C.textHi, fontSize: 32, fontWeight: 800, textDecoration: "none", letterSpacing: "-0.03em" }}>
+                  style={{ color: C.textHi, fontSize: 32, fontWeight: 800, textDecoration: "none", letterSpacing: "-0.03em", cursor: "pointer" }}>
                   {l}
                 </motion.a>
               ))}

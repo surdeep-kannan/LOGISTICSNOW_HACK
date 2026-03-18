@@ -133,18 +133,24 @@ function TerminalLogs({ active, agent }) {
 
 function Waveform({ color, active, agent }) {
   return (
-    <div className="flex items-end gap-1 h-8 lg:h-12 w-full opacity-40 group-hover:opacity-100 transition-opacity">
-      {[...Array(15)].map((_, i) => (
+    <div className="flex items-end gap-[3px] h-6 lg:h-8 w-full">
+      {[...Array(20)].map((_, i) => (
         <motion.div
-          key={i} 
-          animate={{ height: active ? [4, agent.signal[i], 4] : [4, 12, 4] }}
-          transition={{ 
-            duration: 1 + Math.random(), 
-            repeat: Infinity, 
-            delay: i * 0.1 
+          key={i}
+          animate={{ scaleY: active ? [0.2, agent.signal[i % agent.signal.length] / 100, 0.2] : [0.1, 0.3, 0.1] }}
+          transition={{
+            duration: 1.2 + (i % 5) * 0.3,
+            repeat: Infinity,
+            delay: i * 0.06,
+            ease: "easeInOut"
           }}
-          className="w-1 rounded-full"
-          style={{ background: color }}
+          style={{
+            flex: 1,
+            borderRadius: 99,
+            transformOrigin: "bottom",
+            background: `linear-gradient(to top, ${color}80, ${color}20)`,
+            minHeight: 2,
+          }}
         />
       ))}
     </div>
@@ -247,11 +253,15 @@ function Pillar({ agent, active, onClick }) {
 
         {/* Bottom waveform */}
         {active && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mt-auto space-y-4 hidden lg:block">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mt-auto space-y-3 hidden lg:block">
+            <div className="text-[9px] font-mono text-white/25 tracking-[0.15em] uppercase mb-1">Signal Output</div>
             <Waveform color={agent.color} active={active} agent={agent} />
-            <div className="flex justify-between items-center text-[9px] font-black text-white/30 tracking-[0.2em] uppercase">
-              <span>NET_IFACE_{agent.id.substring(0,4)}</span>
-              <span className="animate-pulse flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full" style={{ background: agent.color }}/> STREAM_SYNCED</span>
+            <div className="flex justify-between items-center pt-1">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: agent.color }} />
+                <span className="text-[9px] font-mono font-bold tracking-widest uppercase" style={{ color: `${agent.color}80` }}>Stream Active</span>
+              </div>
+              <span className="text-[9px] font-mono text-white/20 tracking-wider">SYNC_OK</span>
             </div>
           </motion.div>
         )}
