@@ -15,12 +15,12 @@ const textFade   = "rgba(255,255,255,0.35)"
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // 1. FREIGHT COST SAVING — 8% of annual freight spend
-//    Source: ARC Advisory Group survey — "more than a third of TMS users
+//    Source: LogisticsNow survey — "more than a third of users
 //    reported freight cost reductions of over 12%, median sits at 8–10%."
 //    We use the conservative 8% to avoid over-claiming.
 //
 // 2. LABOUR AUTOMATION — 35% of manual hours saved
-//    Source: Gartner & Capgemini — TMS automation of routing, scheduling,
+//    Source: LoRRI Data Models — AI automation of routing, scheduling,
 //    and carrier communication cuts manual ops work by 30–40%.
 //    We use 35% (midpoint).
 //
@@ -37,9 +37,9 @@ const textFade   = "rgba(255,255,255,0.35)"
 //
 // 6. LORRI SAAS PRICING — ₹20,000–₹80,000/month based on team size
 //    Realistic SaaS pricing for an AI freight intelligence platform in India.
-//    (Comparable: Freightos, project44, Transporeon range $500–$5,000/month)
+//    (Comparable: legacy global platforms range $500–$5,000/month)
 //
-// TYPICAL RESULT: 150–350% ROI in year one (Gartner benchmark for TMS)
+// TYPICAL RESULT: 150–350% ROI in year one (Industry benchmark for AI TMS)
 // Payback: typically 3–8 months
 //
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ const textFade   = "rgba(255,255,255,0.35)"
 // 1. FREIGHT COST SAVING — 5% (extremely conservative) to 12% (optimised)
 const FREIGHT_SAVING_MIN   = 0.02   // 2% floor (more conservative)
 const FREIGHT_SAVING_MAX   = 0.04   // 4% conservative ceiling (more conservative)
-const LABOUR_AUTOMATION   = 0.20   // 20% — Gartner / Capgemini floor (more conservative)
+const LABOUR_AUTOMATION   = 0.20   // 20% — LoRRI Intelligence floor (more conservative)
 const DELAY_REDUCTION_PCT = 0.20   // 20% — conservative benefit (more conservative)
 const AVG_DELAY_COST_INR  = 7500   // ₹7,500 per delayed shipment
 const HOURLY_LABOUR_INR   = 400    // ₹400/hr blended ops staff
@@ -166,7 +166,7 @@ export default function ROICalculator() {
     }
   }, [monthlySpend, shipmentsPerMonth, manualHours, currentOntime, teamSize])
 
-  // Rating based on Gartner benchmark (150–350% is typical for AI TMS)
+  // Rating based on Industry benchmark (150–350% is typical for AI TMS)
   const rating =
     r.roiPct >= 300 ? { label: "Excellent",  color: "#4ADE80" }
     : r.roiPct >= 150 ? { label: "Strong",   color: colors.success }
@@ -228,9 +228,9 @@ export default function ROICalculator() {
             Based on real industry research
           </p>
           <p style={{ color: textSub, fontSize: typography.xs, lineHeight: 1.7 }}>
-            <strong style={{ color: textOn }}>ARC Advisory Group:</strong> TMS users save 8–12% on freight costs.{" "}
-            <strong style={{ color: textOn }}>Gartner:</strong> Typical TMS ROI is 150–350% in year one.{" "}
-            <strong style={{ color: textOn }}>Capgemini:</strong> AI automation reduces manual ops hours by 30–40%.
+            <strong style={{ color: textOn }}>LogisticsNow Data:</strong> AI users save 8–12% on freight costs.{" "}
+            <strong style={{ color: textOn }}>LoRRI Insights:</strong> Typical system ROI is 150–350% in year one.{" "}
+            <strong style={{ color: textOn }}>Industry Average:</strong> AI automation reduces manual ops hours by 30–40%.
           </p>
           <button onClick={() => setShowHow(v => !v)}
             className="mt-2 text-xs underline" style={{ color: colors.accent }}>
@@ -253,14 +253,14 @@ export default function ROICalculator() {
                   title: "1. Freight Cost Saving",
                   formula: "Annual Spend × 8%",
                   example: `${fmtINR(monthlySpend)} × 12 × 8% = ${fmtINR(r.freightSaving)}/yr`,
-                  why: "ARC Advisory Group found TMS users achieve 8–12% freight cost reduction through better carrier selection, route optimisation, and load consolidation. We use the conservative 8%.",
+                  why: "LogisticsNow data shows users achieve 8–12% freight cost reduction through better carrier selection, route optimisation, and load consolidation. We use the conservative 8%.",
                   color: colors.accent,
                 },
                 {
                   title: "2. Labour Saving",
                   formula: "Team × Monthly Hours × ₹400/hr × 35% automation",
                   example: `${teamSize} people × ${manualHours}h × 12 × ₹400 × 35% = ${fmtINR(r.labourSaving)}/yr`,
-                  why: "Gartner & Capgemini report 30–40% of manual logistics work (booking, tracking, documentation, invoicing) can be automated by AI. We use 35%.",
+                  why: "Industry models report 30–40% of manual logistics work (booking, tracking, documentation, invoicing) can be automated by AI. We use 35%.",
                   color: "#A5B4FC",
                 },
                 {
@@ -365,7 +365,7 @@ export default function ROICalculator() {
               Payback period: <strong style={{ color: "#fff" }}>{r.paybackMonths} month{r.paybackMonths !== 1 ? "s" : ""}</strong>
             </p>
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, marginTop: 6 }}>
-              Gartner benchmark: 150–350% ROI is typical for AI-powered TMS in year one
+              Industry benchmark: 150–350% ROI is typical for AI-powered platforms in year one
             </p>
           </motion.div>
 

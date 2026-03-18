@@ -212,31 +212,47 @@ function Navbar({ onLogin, onSignup, onDemo }) {
         </div>
       </motion.nav>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer (Full-screen takeover) */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: "easeInOut" }}
             className="sm:hidden"
-            style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 199, background: "rgba(57,49,133,0.98)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}`, padding: "16px 20px 24px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
-              {NAV_LINKS.map(l => (
-                <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
+            style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(35,29,91,0.6)", backdropFilter: "blur(32px) saturate(150%)", padding: "24px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            
+            {/* Ambient Background Glows */}
+            <div style={{ position: "absolute", top: "-10%", left: "-20%", width: "70%", height: "50%", background: "#00B4D8", opacity: 0.15, filter: "blur(80px)", borderRadius: "50%", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: "-10%", right: "-20%", width: "70%", height: "50%", background: "#8B5CF6", opacity: 0.15, filter: "blur(100px)", borderRadius: "50%", pointerEvents: "none" }} />
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40, position: "relative", zIndex: 1 }}>
+              <img src={lorriLogo} alt="LoRRI" style={{ height: 32, objectFit: "contain" }} />
+              <button onClick={() => setMobileOpen(false)}
+                style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, borderRadius: "50%", cursor: "pointer", color: C.textHi }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 32, flex: 1, justifyContent: "center", paddingLeft: 10, position: "relative", zIndex: 1 }}>
+              {NAV_LINKS.map((l, i) => (
+                <motion.a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
                   onClick={() => setMobileOpen(false)}
-                  style={{ color: C.textMid, fontSize: 15, textDecoration: "none", padding: "10px 12px", borderRadius: 8, display: "block" }}>
+                  initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05, duration: 0.4, ease: "easeOut" }}
+                  style={{ color: C.textHi, fontSize: 32, fontWeight: 800, textDecoration: "none", letterSpacing: "-0.03em" }}>
                   {l}
-                </a>
+                </motion.a>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}
+              style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: "auto", position: "relative", zIndex: 1, paddingBottom: 16 }}>
+              <button onClick={() => { onSignup(); setMobileOpen(false) }}
+                style={{ width: "100%", color: "#fff", fontSize: 16, fontWeight: 800, background: C.grad, border: "none", padding: "18px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", boxShadow: `0 8px 32px ${C.accentGlow}` }}>
+                Get Started
+              </button>
               <button onClick={() => { onLogin(); setMobileOpen(false) }}
-                style={{ flex: 1, color: C.textMid, fontSize: 14, background: "transparent", border: `1px solid ${C.border}`, padding: "10px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+                style={{ width: "100%", color: C.textHi, fontSize: 16, fontWeight: 700, background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.12)`, padding: "18px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit" }}>
                 Sign In
               </button>
-              <button onClick={() => { onSignup(); setMobileOpen(false) }}
-                style={{ flex: 1, color: "#fff", fontSize: 14, fontWeight: 700, background: C.grad, border: "none", padding: "10px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
-                Sign Up
-              </button>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

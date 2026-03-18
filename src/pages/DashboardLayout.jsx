@@ -10,6 +10,9 @@ import {
 } from "@heroicons/react/24/outline"
 import { colors, typography } from "../styles"
 import lorriLogo from "../assets/lorri.png"
+import truckMove from "../assets/truck_move.png"
+import warningIcon from "../assets/warning.png"
+import rupeeIcon from "../assets/rupee-indian.png"
 import AIChat from "../components/Aichat"
 import { auth, clearToken } from "../lib/api"
 
@@ -68,6 +71,9 @@ export default function DashboardLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [hasUnread, setHasUnread] = useState(true)
   const [user, setUser] = useState({ name: "", email: "" })
 
   // Load real user from backend
@@ -231,21 +237,80 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <TopBarButton>
-              <BellIcon className="w-4 h-4" style={{ color: textSub }} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border"
-                style={{ background: colors.accent, borderColor: surface }} />
-            </TopBarButton>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold cursor-pointer"
-              style={{ background: colors.gradientAccent, color: "#fff" }}>
-              {initials(user.name)}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <TopBarButton onClick={() => { 
+                setShowNotifications(!showNotifications); 
+                setShowProfileMenu(false);
+                if (!showNotifications) setHasUnread(false);
+              }}>
+                <BellIcon className="w-4 h-4" style={{ color: textSub }} />
+                {hasUnread && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border"
+                    style={{ background: colors.accent, borderColor: surface }} />
+                )}
+              </TopBarButton>
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:10}} transition={{ duration: 0.15 }} className="absolute right-0 mt-3 w-72 rounded-xl shadow-2xl overflow-hidden z-50 border" style={{ background: surfaceMid, borderColor: border }}>
+                    <div className="p-4 border-b" style={{ borderColor: border }}>
+                      <h4 className="text-sm font-bold text-white">Notifications</h4>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto p-2 space-y-1">
+                        <div className="flex gap-4 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors items-center">
+                          <img src={truckMove} className="w-8 h-8 object-contain" alt="Route" />
+                          <div>
+                            <p className="text-xs font-bold text-white mb-0.5">Route Optimized</p>
+                            <p className="text-[10px] text-white/60 leading-tight">AI saved 12hrs on BLR → DEL lane</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-4 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors items-center">
+                          <img src={warningIcon} className="w-8 h-8 object-contain drop-shadow" alt="Warning" />
+                          <div>
+                            <p className="text-xs font-bold text-white mb-0.5">Weather Alert</p>
+                            <p className="text-[10px] text-white/60 leading-tight">Heavy rain at JNPT. Delay expected.</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-4 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors items-center">
+                          <img src={rupeeIcon} className="w-8 h-8 object-contain" alt="Payment" />
+                          <div>
+                            <p className="text-xs font-bold text-white mb-0.5">Invoice Paid</p>
+                            <p className="text-[10px] text-white/60 leading-tight">Carrier invoice #492 cleared fully</p>
+                          </div>
+                        </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="relative">
+              <div onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false) }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold cursor-pointer hover:opacity-80 transition-opacity shadow-md"
+                style={{ background: colors.gradientAccent, color: "#fff" }}>
+                {initials(user.name)}
+              </div>
+              <AnimatePresence>
+                {showProfileMenu && (
+                  <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} exit={{opacity:0, y:10}} transition={{ duration: 0.15 }} className="absolute right-0 mt-3 w-56 rounded-xl shadow-2xl p-2 z-50 border flex flex-col gap-1" style={{ background: surfaceMid, borderColor: border }}>
+                    <div className="px-3 py-2.5 mb-1 border-b" style={{ borderColor: border }}>
+                      <p className="text-sm font-bold text-white truncate">{user.name || "User"}</p>
+                      <p className="text-[10px] text-white/50 truncate mt-0.5">{user.email || "user@example.com"}</p>
+                    </div>
+                    <button onClick={() => { navigate("/dashboard/settings"); setShowProfileMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                      Account Settings
+                    </button>
+                    <button onClick={handleSignOut} className="w-full text-left px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-1">
+                      Sign Out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6 flex flex-col">
           <Outlet />
         </main>
       </div>
@@ -277,10 +342,11 @@ function SignOutButton({ onClick }) {
   )
 }
 
-function TopBarButton({ children }) {
+function TopBarButton({ children, onClick }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
+      onClick={onClick}
       className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-all"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
